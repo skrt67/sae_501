@@ -1,0 +1,11 @@
+# Fichiers sensibles
+IDENTIFIANTS.md
+*.secret
+*.private
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
