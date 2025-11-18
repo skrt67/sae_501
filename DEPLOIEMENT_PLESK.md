@@ -1,508 +1,471 @@
-# 🚀 Guide de Déploiement sur Plesk - Asano
+# Guide de Déploiement Asano sur Plesk
 
 ## 📋 Prérequis
 
-### Sur Plesk
-- Accès à un serveur Plesk
-- PHP 8.2+ installé
-- Composer installé
-- Node.js 18+ installé
-- Base de données MySQL ou PostgreSQL
-- Accès SSH (recommandé)
-
-### Sur ton ordinateur
+### Sur votre machine locale
 - Git installé
-- Accès au repository
+- Accès au dépôt : `git@git.unistra.fr:depeli/sae_501.git`
 
-## 🎯 Étape 1 : Préparer le Backend pour la Production
+### Sur le serveur Plesk
+- PHP >= 8.1
+- Composer
+- Node.js >= 18.x
+- MySQL >= 8.0
+- Accès SSH au serveur
+- Domaine configuré dans Plesk
 
-### 1.1 Créer un fichier .env de production
+---
 
-Crée `backend/.env.production` :
+## 🚀 Étape 1 : Préparation de la Base de Données
+
+### 1.1 Créer la base de données dans Plesk
+
+1. Connectez-vous à Plesk
+2. Allez dans **Bases de données** > **Ajouter une base de données**
+3. Créez une base de données :
+   - **Nom** : `asano_db` (ou votre choix)
+   - **Utilisateur** : `asano_user`
+   - **Mot de passe** : Générez un mot de passe fort
+4. Notez ces informations pour plus tard
+
+---
+
+## 🚀 Étape 2 : Connexion SSH et Clonage du Projet
+
+### 2.1 Se connecter en SSH
+
+```bash
+ssh votre_utilisateur@votre-domaine.fr
+```
+
+### 2.2 Aller dans le répertoire web
+
+```bash
+cd httpdocs
+# ou
+cd domains/votre-domaine.fr/httpdocs
+```
+
+### 2.3 Nettoyer le répertoire (si nécessaire)
+
+```bash
+rm -rf *
+rm -rf .htaccess
+```
+
+### 2.4 Cloner le projet
+
+```bash
+git clone git@git.unistra.fr:depeli/sae_501.git .
+```
+
+Si vous n'avez pas configuré SSH, utilisez HTTPS :
+```bash
+git clone https://git.unistra.fr/depeli/sae_501.git .
+```
+
+---
+
+## 🚀 Étape 3 : Configuration du Backend (Laravel)
+
+### 3.1 Aller dans le dossier backend
+
+```bash
+cd backend
+```
+
+### 3.2 Installer les dépendances PHP
+
+```bash
+composer install --optimize-autoloader --no-dev
+```
+
+### 3.3 Configurer l'environnement
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Modifiez les variables suivantes :
 
 ```env
 APP_NAME=Asano
 APP_ENV=production
-APP_KEY=base64:VOTRE_CLE_ICI
+APP_KEY=
 APP_DEBUG=false
-APP_URL=https://votre-domaine.com
+APP_URL=https://votre-domaine.fr
 
-# Base de données MySQL
-DB_CONNECTION=mysql
-DB_HOST=localhost
-DB_PORT=3306
-DB_DATABASE=nom_de_votre_base
-DB_USERNAME=votre_utilisateur
-DB_PASSWORD=votre_mot_de_passe
-
-SESSION_DRIVER=database
-SESSION_LIFETIME=120
-
-CACHE_STORE=database
-QUEUE_CONNECTION=database
-
-# Email (Gmail ou autre)
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=votre-email@gmail.com
-MAIL_PASSWORD=votre-mot-de-passe-app
-MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS=votre-email@gmail.com
-MAIL_FROM_NAME="Asano"
-
-# URL du frontend
-APP_FRONTEND_URL=https://votre-domaine.com
-```
-
-### 1.2 Optimiser le backend
-
-```bash
-cd backend
-
-# Installer les dépendances de production uniquement
-composer install --optimize-autoloader --no-dev
-
-# Générer la clé d'application (si nécessaire)
-php artisan key:generate
-
-# Optimiser les configurations
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
-## 🎯 Étape 2 : Préparer le Frontend pour la Production
-
-### 2.1 Créer un fichier .env de production
-
-Crée `frontend/.env.production` :
-
-```env
-VITE_API_URL=https://votre-domaine.com/api
-VITE_APP_NAME=Asano
-VITE_APP_ENV=production
-```
-
-### 2.2 Build du frontend
-
-```bash
-cd frontend
-
-# Installer les dépendances
-npm install
-
-# Build de production
-npm run build
-```
-
-Cela créera un dossier `frontend/dist/` avec les fichiers optimisés.
-
-## 🎯 Étape 3 : Déploiement sur Plesk
-
-### 3.1 Créer un domaine/sous-domaine dans Plesk
-
-1. Connecte-toi à Plesk
-2. Va dans "Domaines" → "Ajouter un domaine"
-3. Entre ton domaine (ex: asano.ton-domaine.com)
-4. Configure le document root
-
-### 3.2 Structure des dossiers sur Plesk
-
-```
-/httpdocs/                    ← Document root (frontend)
-  ├── index.html
-  ├── assets/
-  └── ...
-/api/                         ← Backend Laravel
-  ├── app/
-  ├── bootstrap/
-  ├── config/
-  ├── database/
-  ├── public/
-  ├── routes/
-  ├── storage/
-  ├── vendor/
-  ├── .env
-  └── artisan
-```
-
-### 3.3 Upload des fichiers
-
-#### Option A : Via FTP/SFTP (FileZilla)
-
-1. **Upload du backend** :
-   - Upload tout le dossier `backend/` vers `/api/`
-   - Copie `.env.production` vers `/api/.env`
-
-2. **Upload du frontend** :
-   - Upload le contenu de `frontend/dist/` vers `/httpdocs/`
-
-#### Option B : Via Git (Recommandé)
-
-```bash
-# Sur le serveur via SSH
-cd /var/www/vhosts/votre-domaine.com
-
-# Cloner le repository
-git clone votre-repo.git temp
-cd temp
-
-# Déplacer les fichiers
-mv backend ../api
-mv frontend/dist/* ../httpdocs/
-
-# Nettoyer
-cd ..
-rm -rf temp
-```
-
-### 3.4 Configuration du backend sur Plesk
-
-```bash
-# Via SSH
-cd /var/www/vhosts/votre-domaine.com/api
-
-# Installer les dépendances
-composer install --optimize-autoloader --no-dev
-
-# Configurer les permissions
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-
-# Générer la clé
-php artisan key:generate
-
-# Exécuter les migrations
-php artisan migrate --force
-
-# Optimiser
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
-### 3.5 Configurer les permissions des fichiers
-
-```bash
-# Via SSH
-cd /var/www/vhosts/votre-domaine.com
-
-# Permissions pour le backend
-chmod -R 755 api/
-chmod -R 775 api/storage api/bootstrap/cache
-chown -R www-data:www-data api/
-
-# Permissions pour le frontend
-chmod -R 755 httpdocs/
-chown -R www-data:www-data httpdocs/
-```
-
-### 3.6 Vérifier le .htaccess de l'API
-
-Le fichier `/api/public/.htaccess` doit contenir :
-
-```apache
-# Allow access to this directory
-<IfModule mod_authz_core.c>
-    Require all granted
-</IfModule>
-
-# For Apache 2.2
-<IfModule !mod_authz_core.c>
-    Order allow,deny
-    Allow from all
-</IfModule>
-
-<IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
-
-    RewriteEngine On
-
-    # Handle Authorization Header
-    RewriteCond %{HTTP:Authorization} .
-    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-
-    # Redirect Trailing Slashes If Not A Folder...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^ %1 [L,R=301]
-
-    # Send Requests To Front Controller...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
-</IfModule>
-```
-
-### 3.7 Configurer Apache pour autoriser .htaccess
-
-Dans Plesk, va dans "Apache & nginx Settings" pour ton domaine :
-
-**Directives Apache supplémentaires** :
-```apache
-<Directory /var/www/vhosts/votre-domaine.com/api/public>
-    Options -Indexes +FollowSymLinks
-    AllowOverride All
-    Require all granted
-</Directory>
-
-Alias /api /var/www/vhosts/votre-domaine.com/api/public
-
-<Directory /var/www/vhosts/votre-domaine.com/api/public>
-    Options -Indexes +FollowSymLinks
-    AllowOverride All
-    Require all granted
-    
-    <IfModule mod_rewrite.c>
-        RewriteEngine On
-        RewriteCond %{REQUEST_FILENAME} !-d
-        RewriteCond %{REQUEST_FILENAME} !-f
-        RewriteRule ^ index.php [L]
-    </IfModule>
-</Directory>
-```
-
-**OU si tu utilises nginx comme proxy** :
-
-**Directives nginx supplémentaires** :
-```nginx
-location /api {
-    alias /var/www/vhosts/votre-domaine.com/api/public;
-    try_files $uri $uri/ /api/index.php?$query_string;
-    
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $request_filename;
-        include fastcgi_params;
-    }
-}
-```
-
-## 🎯 Étape 4 : Configuration de la Base de Données
-
-### 4.1 Créer la base de données dans Plesk
-
-1. Va dans "Bases de données"
-2. Clique sur "Ajouter une base de données"
-3. Nom : `asano_db`
-4. Utilisateur : `asano_user`
-5. Mot de passe : Génère un mot de passe fort
-6. Note les informations de connexion
-
-### 4.2 Mettre à jour le .env
-
-```env
+# Base de données (utilisez les infos de l'étape 1.1)
 DB_CONNECTION=mysql
 DB_HOST=localhost
 DB_PORT=3306
 DB_DATABASE=asano_db
 DB_USERNAME=asano_user
-DB_PASSWORD=ton_mot_de_passe
+DB_PASSWORD=votre_mot_de_passe
+
+# Mail (configurez avec vos paramètres SMTP)
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.votre-domaine.fr
+MAIL_PORT=587
+MAIL_USERNAME=noreply@votre-domaine.fr
+MAIL_PASSWORD=votre_mot_de_passe_email
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@votre-domaine.fr
+MAIL_FROM_NAME="${APP_NAME}"
+
+# Frontend URL
+FRONTEND_URL=https://votre-domaine.fr
+
+# Session & Cache
+SESSION_DRIVER=file
+CACHE_DRIVER=file
+QUEUE_CONNECTION=database
 ```
 
-### 4.3 Importer les données (optionnel)
+Sauvegardez avec `Ctrl+O`, puis `Ctrl+X`
 
-Si tu veux importer tes données de développement :
+### 3.4 Générer la clé d'application
 
 ```bash
-# Sur ton ordinateur
-cd backend
-sqlite3 database/database.sqlite .dump > dump.sql
-
-# Adapter pour MySQL (remplacer les types SQLite)
-# Puis sur le serveur
-mysql -u asano_user -p asano_db < dump.sql
+php artisan key:generate
 ```
 
-## 🎯 Étape 5 : Configuration SSL (HTTPS)
+### 3.5 Créer le lien symbolique pour le storage
 
-### 5.1 Activer Let's Encrypt dans Plesk
+```bash
+php artisan storage:link
+```
 
-1. Va dans ton domaine
-2. Clique sur "SSL/TLS Certificates"
-3. Clique sur "Install" pour Let's Encrypt
-4. Coche "Secure the domain and www subdomain"
-5. Clique sur "Get it free"
+### 3.6 Exécuter les migrations
 
-### 5.2 Forcer HTTPS
+```bash
+php artisan migrate --force
+```
 
-Dans `.htaccess` à la racine :
+### 3.7 Optimiser Laravel pour la production
+
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+### 3.8 Définir les permissions
+
+```bash
+chmod -R 755 storage bootstrap/cache
+chown -R votre_utilisateur:psacln storage bootstrap/cache
+```
+
+---
+
+## 🚀 Étape 4 : Configuration du Frontend (React)
+
+### 4.1 Retourner à la racine et aller dans frontend
+
+```bash
+cd ../frontend
+```
+
+### 4.2 Installer les dépendances Node.js
+
+```bash
+npm install
+```
+
+### 4.3 Configurer l'environnement
+
+```bash
+nano .env
+```
+
+Ajoutez :
+
+```env
+VITE_API_URL=https://votre-domaine.fr/api
+```
+
+### 4.4 Build de production
+
+```bash
+npm run build
+```
+
+Cela créera un dossier `dist/` avec les fichiers optimisés.
+
+---
+
+## 🚀 Étape 5 : Configuration de Plesk
+
+### 5.1 Configurer le Document Root
+
+1. Dans Plesk, allez dans **Paramètres d'hébergement**
+2. Changez le **Document Root** vers : `/httpdocs/backend/public`
+3. Sauvegardez
+
+### 5.2 Copier le frontend dans public
+
+```bash
+cd ..
+cp -r frontend/dist/* backend/public/
+```
+
+### 5.3 Vérifier le fichier .htaccess
+
+Le fichier `backend/public/.htaccess` doit contenir :
 
 ```apache
-RewriteEngine On
-RewriteCond %{HTTPS} off
-RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect to HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # API Routes
+    RewriteCond %{REQUEST_URI} ^/api/
+    RewriteRule ^ index.php [L]
+
+    # Frontend Routes - serve index.html for all non-API routes
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/api/
+    RewriteRule ^ index.html [L]
+</IfModule>
 ```
 
-## 🎯 Étape 6 : Configuration des Tâches Planifiées (Cron)
+### 5.4 Configuration PHP dans Plesk
 
-Dans Plesk, va dans "Tâches planifiées" et ajoute :
+1. Allez dans **Paramètres PHP**
+2. Vérifiez que ces extensions sont activées :
+   - `pdo_mysql`
+   - `mbstring`
+   - `openssl`
+   - `tokenizer`
+   - `xml`
+   - `ctype`
+   - `json`
+   - `bcmath`
+   - `fileinfo`
+   - `gd`
 
-**Commande** :
+3. Augmentez les limites :
+   - `memory_limit` : 256M
+   - `upload_max_filesize` : 20M
+   - `post_max_size` : 20M
+   - `max_execution_time` : 300
+
+---
+
+## 🚀 Étape 6 : Configuration des Tâches Planifiées (Cron)
+
+### 6.1 Ajouter un Cron Job dans Plesk
+
+1. Allez dans **Tâches planifiées**
+2. Cliquez sur **Ajouter une tâche**
+3. Configurez :
+   - **Commande** : `/usr/bin/php /var/www/vhosts/votre-domaine.fr/httpdocs/backend/artisan schedule:run >> /dev/null 2>&1`
+   - **Fréquence** : Chaque minute (*/1 * * * *)
+
+Cela permettra d'exécuter les tâches planifiées Laravel (notifications, etc.)
+
+---
+
+## 🚀 Étape 7 : Configuration du Queue Worker (Optionnel mais recommandé)
+
+Pour traiter les emails et notifications en arrière-plan :
+
+### 7.1 Créer un script de démarrage
+
 ```bash
-cd /var/www/vhosts/votre-domaine.com/api && php artisan schedule:run >> /dev/null 2>&1
+cd ~/httpdocs/backend
+nano queue-worker.sh
 ```
 
-**Fréquence** : Chaque minute (*/1 * * * *)
-
-## 🎯 Étape 7 : Configuration de la Queue (Optionnel)
-
-Pour les emails et notifications asynchrones :
-
-### 7.1 Créer un service supervisor
-
-Crée `/etc/supervisor/conf.d/asano-worker.conf` :
-
-```ini
-[program:asano-worker]
-process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/vhosts/votre-domaine.com/api/artisan queue:work --sleep=3 --tries=3
-autostart=true
-autorestart=true
-user=www-data
-numprocs=1
-redirect_stderr=true
-stdout_logfile=/var/www/vhosts/votre-domaine.com/api/storage/logs/worker.log
-```
-
-### 7.2 Démarrer le worker
+Ajoutez :
 
 ```bash
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl start asano-worker:*
+#!/bin/bash
+cd /var/www/vhosts/votre-domaine.fr/httpdocs/backend
+php artisan queue:work --sleep=3 --tries=3 --max-time=3600
 ```
 
-## 🎯 Étape 8 : Vérifications Finales
+Rendez-le exécutable :
+
+```bash
+chmod +x queue-worker.sh
+```
+
+### 7.2 Configurer comme service (demandez à votre hébergeur)
+
+Ou ajoutez un cron qui vérifie si le worker tourne :
+
+```bash
+*/5 * * * * cd /var/www/vhosts/votre-domaine.fr/httpdocs/backend && php artisan queue:work --stop-when-empty
+```
+
+---
+
+## 🚀 Étape 8 : Vérification et Tests
 
 ### 8.1 Tester l'API
 
 ```bash
-curl https://votre-domaine.com/api/health
-# Devrait retourner: {"ok":true}
+curl https://votre-domaine.fr/api/health
 ```
+
+Devrait retourner : `{"ok":true}`
 
 ### 8.2 Tester le frontend
 
-Ouvre https://votre-domaine.com dans ton navigateur
+Ouvrez votre navigateur et allez sur : `https://votre-domaine.fr`
 
-### 8.3 Tester l'inscription
+### 8.3 Créer un compte de test
 
-1. Crée un compte
-2. Vérifie que l'email arrive
-3. Connecte-toi
-4. Crée un projet
+1. Allez sur `/register`
+2. Créez un compte
+3. Vérifiez que l'email de vérification est envoyé
+4. Testez la connexion
 
-### 8.4 Vérifier les logs
+---
+
+## 🔄 Mise à Jour du Projet
+
+Pour mettre à jour l'application après des modifications :
 
 ```bash
-# Logs Laravel
-tail -f /var/www/vhosts/votre-domaine.com/api/storage/logs/laravel.log
+# Se connecter en SSH
+ssh votre_utilisateur@votre-domaine.fr
+cd httpdocs
 
-# Logs nginx
-tail -f /var/log/nginx/error.log
+# Pull les dernières modifications
+git pull origin main
+
+# Backend
+cd backend
+composer install --optimize-autoloader --no-dev
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# Frontend
+cd ../frontend
+npm install
+npm run build
+cp -r dist/* ../backend/public/
+
+# Nettoyer le cache
+cd ../backend
+php artisan cache:clear
+php artisan config:clear
 ```
 
-## 🔧 Dépannage
+---
 
-### Erreur 403 Forbidden
-
-Si tu vois "client denied by server configuration" dans les logs :
-
-**Solution 1 : Vérifier les permissions**
-```bash
-# Permissions correctes
-chmod -R 755 /var/www/vhosts/votre-domaine.com/api/
-chmod -R 775 /var/www/vhosts/votre-domaine.com/api/storage
-chmod -R 775 /var/www/vhosts/votre-domaine.com/api/bootstrap/cache
-chown -R www-data:www-data /var/www/vhosts/votre-domaine.com/api/
-```
-
-**Solution 2 : Vérifier le .htaccess**
-
-Assure-toi que `/api/public/.htaccess` contient bien :
-```apache
-<IfModule mod_authz_core.c>
-    Require all granted
-</IfModule>
-```
-
-**Solution 3 : Configuration Apache dans Plesk**
-
-Dans Plesk → Apache & nginx Settings, ajoute :
-```apache
-<Directory /var/www/vhosts/votre-domaine.com/api/public>
-    Options -Indexes +FollowSymLinks
-    AllowOverride All
-    Require all granted
-</Directory>
-```
-
-**Solution 4 : Vérifier les logs Apache**
-```bash
-tail -f /var/log/apache2/error.log
-# ou
-tail -f /var/www/vhosts/votre-domaine.com/logs/error_log
-```
-
-**Solution 5 : Redémarrer Apache**
-```bash
-sudo systemctl restart apache2
-# ou via Plesk
-service apache2 restart
-```
+## 🐛 Dépannage
 
 ### Erreur 500
 
+1. Vérifiez les logs Laravel :
 ```bash
-# Vérifier les permissions
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-
-# Vider le cache
-php artisan cache:clear
-php artisan config:clear
-php artisan route:clear
+tail -f backend/storage/logs/laravel.log
 ```
 
-### Erreur de base de données
-
+2. Vérifiez les permissions :
 ```bash
-# Vérifier la connexion
+chmod -R 755 backend/storage backend/bootstrap/cache
+```
+
+### Erreur de connexion à la base de données
+
+1. Vérifiez le fichier `.env`
+2. Testez la connexion :
+```bash
 php artisan tinker
->>> DB::connection()->getPdo();
+DB::connection()->getPdo();
 ```
 
-### Erreur CORS
+### Les routes API ne fonctionnent pas
 
-Dans `backend/config/cors.php`, vérifie que ton domaine est autorisé :
+1. Vérifiez le `.htaccess` dans `backend/public/`
+2. Vérifiez que `mod_rewrite` est activé dans Apache
 
-```php
-'allowed_origins' => ['https://votre-domaine.com'],
+### Le frontend affiche une page blanche
+
+1. Vérifiez la console du navigateur (F12)
+2. Vérifiez que `VITE_API_URL` est correct dans le build
+3. Rebuild le frontend :
+```bash
+cd frontend
+npm run build
+cp -r dist/* ../backend/public/
 ```
 
-## 📊 Checklist de Déploiement
+### Les emails ne sont pas envoyés
 
-- [ ] Domaine configuré dans Plesk
-- [ ] Base de données MySQL créée
-- [ ] Backend uploadé dans `/api/`
-- [ ] Frontend buildé et uploadé dans `/httpdocs/`
-- [ ] `.env` de production configuré
-- [ ] Migrations exécutées
-- [ ] Permissions configurées (775 sur storage)
-- [ ] SSL activé (Let's Encrypt)
-- [ ] Cron job configuré
-- [ ] Tests effectués (inscription, login, création projet)
-- [ ] Emails fonctionnels
+1. Vérifiez la configuration SMTP dans `.env`
+2. Testez l'envoi d'email :
+```bash
+php artisan tinker
+Mail::raw('Test', function($msg) { $msg->to('votre@email.com')->subject('Test'); });
+```
 
-## 🎉 Résultat
+---
 
-Ton application Asano sera accessible sur :
-- **Frontend** : https://votre-domaine.com
-- **API** : https://votre-domaine.com/api
+## 📝 Checklist de Déploiement
 
-**Prêt pour la production !** 🚀
+- [ ] Base de données créée dans Plesk
+- [ ] Projet cloné via Git
+- [ ] Dépendances backend installées (`composer install`)
+- [ ] Fichier `.env` configuré
+- [ ] Clé d'application générée (`php artisan key:generate`)
+- [ ] Migrations exécutées (`php artisan migrate`)
+- [ ] Storage link créé (`php artisan storage:link`)
+- [ ] Permissions définies (755 sur storage et bootstrap/cache)
+- [ ] Dépendances frontend installées (`npm install`)
+- [ ] Frontend buildé (`npm run build`)
+- [ ] Frontend copié dans public
+- [ ] Document Root configuré vers `backend/public`
+- [ ] Extensions PHP activées
+- [ ] Cron job configuré pour le scheduler
+- [ ] Tests effectués (API + Frontend)
+- [ ] HTTPS activé
+
+---
+
+## 🔒 Sécurité
+
+### Recommandations
+
+1. **Toujours utiliser HTTPS** (activez le certificat SSL dans Plesk)
+2. **Ne jamais commiter le fichier `.env`**
+3. **Utilisez des mots de passe forts** pour la base de données
+4. **Limitez l'accès SSH** aux IPs de confiance
+5. **Activez le firewall** dans Plesk
+6. **Faites des backups réguliers** de la base de données
+
+### Backup de la base de données
+
+```bash
+mysqldump -u asano_user -p asano_db > backup_$(date +%Y%m%d).sql
+```
+
+---
+
+## 📞 Support
+
+En cas de problème :
+1. Consultez les logs Laravel : `backend/storage/logs/laravel.log`
+2. Consultez les logs Apache dans Plesk
+3. Vérifiez la documentation Laravel : https://laravel.com/docs
+4. Contactez le support de votre hébergeur pour les problèmes serveur
+
+---
+
+**Bon déploiement ! 🚀**

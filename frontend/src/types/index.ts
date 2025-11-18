@@ -4,12 +4,9 @@ export interface User {
   id: number
   name: string
   email: string
-  avatar_url?: string
   email_verified_at?: string
   created_at?: string
   updated_at?: string
-  settings?: Record<string, any>
-  role?: string
 }
 
 export interface Notification {
@@ -45,8 +42,6 @@ export interface Sprint {
   id: number
   project_id: number
   name: string
-  phase?: string
-  goal?: string
   starts_at: string
   ends_at: string
   is_active?: boolean
@@ -102,7 +97,6 @@ export interface Epic {
   updated_at?: string
   progress?: number
   color?: string
-  phase?: string
 }
 
 // API Response Types

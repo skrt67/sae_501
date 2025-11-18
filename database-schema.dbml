@@ -1,0 +1,194 @@
+// Asano Project Management - Database Schema
+// Use this on https://dbdiagram.io/
+
+// ============================================
+// CORE TABLES - Actually Used
+// ============================================
+
+Table users {
+  id bigint [primary key, increment]
+  name varchar [not null]
+  email varchar [unique, not null]
+  email_verified_at timestamp
+  password varchar [not null]
+  remember_token varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table projects {
+  id bigint [primary key, increment]
+  name varchar [not null]
+  description text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table project_user {
+  id bigint [primary key, increment]
+  project_id bigint [not null]
+  user_id bigint [not null]
+  role varchar [default: 'member', note: 'owner, member']
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    (project_id, user_id) [unique]
+  }
+}
+
+Table epics {
+  id bigint [primary key, increment]
+  project_id bigint [not null]
+  name varchar [not null]
+  description text
+  color varchar
+  start_date date
+  end_date date
+  status varchar [default: 'planned', note: 'planned, in_progress, completed, on_hold']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table sprints {
+  id bigint [primary key, increment]
+  project_id bigint [not null]
+  name varchar [not null]
+  starts_at date [not null]
+  ends_at date [not null]
+  is_active boolean [default: false]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table tasks {
+  id bigint [primary key, increment]
+  project_id bigint [not null]
+  sprint_id bigint
+  epic_id bigint
+  assignee_id bigint
+  title varchar [not null]
+  description text
+  status varchar [default: 'todo', note: 'todo, in_progress, done']
+  priority tinyint [default: 3, note: '1=high, 5=low']
+  due_date date
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table invitations {
+  id bigint [primary key, increment]
+  project_id bigint [not null]
+  email varchar [not null]
+  token varchar [unique, not null]
+  role varchar [default: 'member', note: 'owner, member']
+  status varchar [default: 'pending', note: 'pending, accepted, rejected']
+  invited_by bigint [not null]
+  expires_at timestamp [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table notifications {
+  id uuid [primary key]
+  type varchar [not null]
+  notifiable_type varchar [not null, note: 'App\Models\User']
+  notifiable_id bigint [not null]
+  data text [not null, note: 'JSON data']
+  read_at timestamp
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    (notifiable_type, notifiable_id)
+  }
+}
+
+Table activity_logs {
+  id bigint [primary key, increment]
+  user_id bigint [not null]
+  project_id bigint [not null]
+  action varchar [not null, note: 'created, updated, deleted, moved, assigned']
+  entity_type varchar [not null, note: 'task, epic, sprint, project']
+  entity_id bigint [not null]
+  changes json
+  description text [not null]
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    (project_id, created_at)
+    (user_id, created_at)
+  }
+}
+
+// ============================================
+// SYSTEM TABLES - Laravel Infrastructure
+// ============================================
+
+Table password_reset_tokens {
+  email varchar [primary key]
+  token varchar [not null]
+  created_at timestamp
+}
+
+Table personal_access_tokens {
+  id bigint [primary key, increment]
+  tokenable_type varchar [not null]
+  tokenable_id bigint [not null]
+  name varchar [not null]
+  token varchar [unique, not null]
+  abilities text
+  last_used_at timestamp
+  expires_at timestamp
+  created_at timestamp
+  updated_at timestamp
+  
+  indexes {
+    (tokenable_type, tokenable_id)
+  }
+}
+
+Table jobs {
+  id bigint [primary key, increment]
+  queue varchar [not null]
+  payload text [not null]
+  attempts tinyint [not null]
+  reserved_at timestamp
+  available_at timestamp [not null]
+  created_at timestamp
+}
+
+Table cache {
+  key varchar [primary key]
+  value text [not null]
+  expiration integer [not null]
+}
+
+// ============================================
+// RELATIONSHIPS
+// ============================================
+
+// Users and Projects (many-to-many)
+Ref: project_user.project_id > projects.id [delete: cascade]
+Ref: project_user.user_id > users.id [delete: cascade]
+
+// Epics belong to Projects
+Ref: epics.project_id > projects.id [delete: cascade]
+
+// Sprints belong to Projects
+Ref: sprints.project_id > projects.id [delete: cascade]
+
+// Tasks relationships
+Ref: tasks.project_id > projects.id [delete: cascade]
+Ref: tasks.epic_id > epics.id [delete: set null]
+Ref: tasks.sprint_id > sprints.id [delete: set null]
+Ref: tasks.assignee_id > users.id [delete: set null]
+
+// Invitations
+Ref: invitations.project_id > projects.id [delete: cascade]
+Ref: invitations.invited_by > users.id [delete: cascade]
+
+// Activity Logs
+Ref: activity_logs.user_id > users.id [delete: cascade]
+Ref: activity_logs.project_id > projects.id [delete: cascade]
