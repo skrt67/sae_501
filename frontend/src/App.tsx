@@ -14,6 +14,7 @@ import Register from './modules/auth/RegisterSplit'
 import ForgotPassword from './modules/auth/ForgotPassword'
 import ResetPassword from './modules/auth/ResetPassword'
 import LandingPage from './modules/landing/LandingPage'
+import AboutPage from './modules/about/AboutPage'
 import Projects from './modules/projects/Projects'
 import Epics from './modules/epics/Epics'
 import Analytics from './modules/analytics/Analytics'
@@ -40,9 +41,9 @@ function App() {
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/about" element={<AboutPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/forgot" element={<ForgotPassword />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               
@@ -51,7 +52,6 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/kanban" element={<Kanban />} />
                 <Route path="/roadmap" element={<Roadmap />} />
-                <Route path="/roadmap/timeline" element={<Roadmap />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/epics" element={<Epics />} />
                 <Route path="/analytics" element={<Analytics />} />

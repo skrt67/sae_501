@@ -180,23 +180,25 @@ export default function KanbanModern() {
           const sprintsList = Array.isArray(sprintsData) ? sprintsData : (sprintsData.data || [])
           setSprints(sprintsList)
           
-          // Sélectionner le sprint actif par défaut si aucun sprint n'est sélectionné
-          if (!selectedSprintId && sprintsList.length > 0) {
+          // Sélectionner le sprint actif par défaut
+          if (sprintsList.length > 0) {
             const activeSprint = sprintsList.find(s => s.is_active)
             if (activeSprint) {
               setSelectedSprintId(activeSprint.id)
             } else {
               setSelectedSprintId(sprintsList[0].id)
             }
+          } else {
+            setSelectedSprintId(null)
           }
         }
       } catch (e) {
-        // Erreur silencieuse
+        console.error('Erreur chargement projet:', e)
       }
     }
 
     fetchProjectData()
-  }, [token, selectedProjectId, projects])
+  }, [token, selectedProjectId])
 
   // Charger le kanban quand le sprint change
   useEffect(() => {
@@ -455,10 +457,12 @@ export default function KanbanModern() {
               setSelectedSprintId(null)
               setSprints([])
               setBoard(null)
+              setLoading(true)
             }}
             style={{ width: 200 }}
             size="large"
-            placeholder="Projet"
+            placeholder="Sélectionner un projet"
+            disabled={projects.length === 0}
           >
             {projects.map((p) => (
               <Option key={p.id} value={p.id}>
@@ -467,13 +471,14 @@ export default function KanbanModern() {
             ))}
           </Select>
           <Select
+            key={`sprint-${selectedProjectId}`}
             value={selectedSprintId}
             onChange={(value) => {
               setSelectedSprintId(value)
             }}
             style={{ width: 200 }}
             size="large"
-            placeholder="Sprint"
+            placeholder="Sélectionner un sprint"
             disabled={!selectedProjectId || sprints.length === 0}
           >
             {sprints.map((s) => (
@@ -494,12 +499,12 @@ export default function KanbanModern() {
       </div>
       
       {/* Alert si pas de sprint */}
-      {!board?.sprint && (
+      {!loading && !board?.sprint && selectedProjectId && (
         <div style={{
           maxWidth: '1600px',
           margin: '0 auto 24px',
-          background: '#ffffff',
-          border: '1px solid rgba(0, 0, 0, 0.15)',
+          background: '#FFF9E6',
+          border: '1px solid #FFD666',
           borderRadius: '8px',
           padding: '20px 24px',
           display: 'flex',
@@ -508,10 +513,16 @@ export default function KanbanModern() {
           gap: '24px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+            <div style={{ fontSize: '24px' }}>⚠️</div>
             <div>
-              <div style={{ fontWeight: 600, color: '#1a1a1a', marginBottom: '4px', fontSize: '16px' }}>Aucun sprint actif</div>
+              <div style={{ fontWeight: 600, color: '#1a1a1a', marginBottom: '4px', fontSize: '16px' }}>
+                {sprints.length === 0 ? 'Aucun sprint dans ce projet' : 'Aucun sprint actif'}
+              </div>
               <div style={{ fontSize: '14px', color: 'rgba(0, 0, 0, 0.65)' }}>
-                Créez un sprint pour pouvoir ajouter des tâches au Kanban
+                {sprints.length === 0 
+                  ? 'Créez votre premier sprint pour commencer à organiser vos tâches'
+                  : 'Activez un sprint existant ou créez-en un nouveau pour voir le Kanban'
+                }
               </div>
             </div>
           </div>
@@ -528,7 +539,7 @@ export default function KanbanModern() {
               flexShrink: 0
             }}
           >
-            Créer un sprint
+            {sprints.length === 0 ? 'Créer un sprint' : 'Gérer les sprints'}
           </Button>
         </div>
       )}

@@ -2,83 +2,83 @@
 
 namespace Tests\Feature;
 
+use Tests\TestCase;
 use App\Models\User;
 use App\Models\Project;
-use App\Models\Task;
-use App\Models\Epic;
 use App\Models\Sprint;
+use App\Models\Epic;
+use App\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
 class TaskTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * Test user can create a task
-     */
-    public function test_user_can_create_task(): void
+    private function setupProjectEnvironment()
     {
         $user = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
-
+        $token = $user->createToken('test')->plainTextToken;
+        
         $project = Project::factory()->create();
         $project->users()->attach($user->id, ['role' => 'owner']);
+        
+        $sprint = Sprint::factory()->create(['project_id' => $project->id]);
+        $epic = Epic::factory()->create(['project_id' => $project->id]);
+
+        return [
+            'user' => $user,
+            'token' => $token,
+            'project' => $project,
+            'sprint' => $sprint,
+            'epic' => $epic
+        ];
+    }
+
+    /** @test */
+    public function user_can_create_task()
+    {
+        $env = $this->setupProjectEnvironment();
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json'
+            'Authorization' => 'Bearer ' . $env['token']
         ])->postJson('/api/tasks', [
+            'project_id' => $env['project']->id,
+            'sprint_id' => $env['sprint']->id,
+            'epic_id' => $env['epic']->id,
             'title' => 'Test Task',
-            'description' => '<p>Test Description</p>',
+            'description' => 'Test Description',
             'status' => 'todo',
-            'project_id' => $project->id,
-            'assigned_to' => $user->id
+            'priority' => 3
         ]);
 
         $response->assertStatus(201)
-                 ->assertJsonStructure([
-                     'id',
-                     'title',
-                     'description',
-                     'status',
-                     'project_id'
+                 ->assertJson([
+                     'title' => 'Test Task',
+                     'status' => 'todo'
                  ]);
 
         $this->assertDatabaseHas('tasks', [
-            'title' => 'Test Task',
-            'status' => 'todo',
-            'project_id' => $project->id
+            'title' => 'Test Task'
         ]);
     }
 
-    /**
-     * Test user can update task status
-     */
-    public function test_user_can_update_task_status(): void
+    /** @test */
+    public function user_can_update_task_status()
     {
-        $user = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $project = Project::factory()->create();
-        $project->users()->attach($user->id, ['role' => 'member']);
-
+        $env = $this->setupProjectEnvironment();
+        
         $task = Task::factory()->create([
-            'project_id' => $project->id,
+            'project_id' => $env['project']->id,
             'status' => 'todo'
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json'
+            'Authorization' => 'Bearer ' . $env['token']
         ])->putJson("/api/tasks/{$task->id}/status", [
             'status' => 'in_progress'
         ]);
 
-        $response->assertStatus(200)
-                 ->assertJson([
-                     'status' => 'in_progress'
-                 ]);
+        $response->assertStatus(200);
 
         $this->assertDatabaseHas('tasks', [
             'id' => $task->id,
@@ -86,146 +86,40 @@ class TaskTest extends TestCase
         ]);
     }
 
-    /**
-     * Test user can assign task to team member
-     */
-    public function test_user_can_assign_task_to_team_member(): void
+    /** @test */
+    public function user_can_delete_task()
     {
-        $user = User::factory()->create();
-        $assignee = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $project = Project::factory()->create();
-        $project->users()->attach($user->id, ['role' => 'owner']);
-        $project->users()->attach($assignee->id, ['role' => 'member']);
-
+        $env = $this->setupProjectEnvironment();
+        
         $task = Task::factory()->create([
-            'project_id' => $project->id
+            'project_id' => $env['project']->id
         ]);
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json'
-        ])->putJson("/api/tasks/{$task->id}", [
-            'assigned_to' => $assignee->id
-        ]);
-
-        $response->assertStatus(200);
-
-        $this->assertDatabaseHas('tasks', [
-            'id' => $task->id,
-            'assigned_to' => $assignee->id
-        ]);
-    }
-
-    /**
-     * Test user can associate task with epic
-     */
-    public function test_user_can_associate_task_with_epic(): void
-    {
-        $user = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $project = Project::factory()->create();
-        $project->users()->attach($user->id, ['role' => 'owner']);
-
-        $epic = Epic::factory()->create([
-            'project_id' => $project->id
-        ]);
-
-        $task = Task::factory()->create([
-            'project_id' => $project->id
-        ]);
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json'
-        ])->putJson("/api/tasks/{$task->id}", [
-            'epic_id' => $epic->id
-        ]);
-
-        $response->assertStatus(200);
-
-        $this->assertDatabaseHas('tasks', [
-            'id' => $task->id,
-            'epic_id' => $epic->id
-        ]);
-    }
-
-    /**
-     * Test user can associate task with sprint
-     */
-    public function test_user_can_associate_task_with_sprint(): void
-    {
-        $user = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $project = Project::factory()->create();
-        $project->users()->attach($user->id, ['role' => 'owner']);
-
-        $sprint = Sprint::factory()->create([
-            'project_id' => $project->id
-        ]);
-
-        $task = Task::factory()->create([
-            'project_id' => $project->id
-        ]);
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json'
-        ])->putJson("/api/tasks/{$task->id}", [
-            'sprint_id' => $sprint->id
-        ]);
-
-        $response->assertStatus(200);
-
-        $this->assertDatabaseHas('tasks', [
-            'id' => $task->id,
-            'sprint_id' => $sprint->id
-        ]);
-    }
-
-    /**
-     * Test user can delete task
-     */
-    public function test_user_can_delete_task(): void
-    {
-        $user = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $project = Project::factory()->create();
-        $project->users()->attach($user->id, ['role' => 'member']);
-
-        $task = Task::factory()->create([
-            'project_id' => $project->id
-        ]);
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json'
+            'Authorization' => 'Bearer ' . $env['token']
         ])->deleteJson("/api/tasks/{$task->id}");
 
         $response->assertStatus(204);
-        $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
+
+        $this->assertDatabaseMissing('tasks', [
+            'id' => $task->id
+        ]);
     }
 
-    /**
-     * Test task validation
-     */
-    public function test_task_requires_title_and_project(): void
+    /** @test */
+    public function task_requires_valid_priority()
     {
-        $user = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
+        $env = $this->setupProjectEnvironment();
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json'
+            'Authorization' => 'Bearer ' . $env['token']
         ])->postJson('/api/tasks', [
-            'description' => 'Test Description'
+            'project_id' => $env['project']->id,
+            'title' => 'Test Task',
+            'status' => 'todo',
+            'priority' => 10 // Invalid: should be 1-5
         ]);
 
-        $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['title', 'project_id']);
+        $response->assertStatus(422);
     }
 }

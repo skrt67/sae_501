@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->jsonb('settings')->nullable()->after('avatar_url');
+            $table->json('settings')->nullable()->after('avatar_url');
         });
     }
 

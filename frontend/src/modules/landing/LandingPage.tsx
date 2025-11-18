@@ -96,19 +96,6 @@ export default function LandingPage() {
         }} />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{
-            display: 'inline-block',
-            padding: '8px 20px',
-            background: '#f5f5f5',
-            border: '1px solid #e0e0e0',
-            borderRadius: '30px',
-            marginBottom: '40px'
-          }}>
-            <span style={{ color: '#000000', fontSize: '13px', fontWeight: '600', letterSpacing: '0.5px' }}>
-              NOUVELLE PLATEFORME DE GESTION AGILE
-            </span>
-          </div>
-
           <h1 style={{
             fontSize: '82px',
             fontWeight: '900',
@@ -158,47 +145,9 @@ export default function LandingPage() {
             >
               Commencer gratuitement
             </Button>
-            <Button
-              size="large"
-              onClick={() => navigate('/login')}
-              style={{
-                background: '#ffffff',
-                color: '#000000',
-                height: '52px',
-                fontSize: '16px',
-                fontWeight: '500',
-                border: '1px solid #e0e0e0',
-                padding: '0 32px',
-                borderRadius: '4px'
-              }}
-            >
-              Voir la démo
-            </Button>
           </div>
 
-          {/* Stats */}
-          <div style={{
-            display: 'flex',
-            gap: '64px',
-            justifyContent: 'center',
-            paddingTop: '48px',
-            borderTop: '1px solid #e0e0e0',
-            maxWidth: '700px',
-            margin: '0 auto'
-          }}>
-            <div>
-              <div style={{ fontSize: '36px', fontWeight: '800', color: '#000000', marginBottom: '8px' }}>2k+</div>
-              <div style={{ fontSize: '14px', color: '#666666', fontWeight: '500' }}>Projets actifs</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '36px', fontWeight: '800', color: '#000000', marginBottom: '8px' }}>15k+</div>
-              <div style={{ fontSize: '14px', color: '#666666', fontWeight: '500' }}>Utilisateurs</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '36px', fontWeight: '800', color: '#000000', marginBottom: '8px' }}>99.9%</div>
-              <div style={{ fontSize: '14px', color: '#666666', fontWeight: '500' }}>Uptime</div>
-            </div>
-          </div>
+
         </div>
       </section>
 
@@ -607,69 +556,13 @@ export default function LandingPage() {
 
             <div>
               <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#000000', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Produit
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <a href="#" style={{ color: '#666666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
-                   onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
-                   onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}>
-                  Fonctionnalités
-                </a>
-                <a href="#" style={{ color: '#666666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
-                   onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
-                   onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}>
-                  Tarifs
-                </a>
-                <a href="#" style={{ color: '#666666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
-                   onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
-                   onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}>
-                  Sécurité
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#000000', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Ressources
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <a href="#" style={{ color: '#666666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
-                   onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
-                   onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}>
-                  Documentation
-                </a>
-                <a href="#" style={{ color: '#666666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
-                   onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
-                   onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}>
-                  API
-                </a>
-                <a href="#" style={{ color: '#666666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
-                   onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
-                   onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}>
-                  Support
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#000000', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Entreprise
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <a href="#" style={{ color: '#666666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
+                <a href="/about" style={{ color: '#666666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
                    onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
                    onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}>
                   À propos
-                </a>
-                <a href="#" style={{ color: '#666666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
-                   onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
-                   onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}>
-                  Blog
-                </a>
-                <a href="#" style={{ color: '#666666', textDecoration: 'none', fontSize: '14px', transition: 'color 0.2s' }}
-                   onMouseEnter={(e) => e.currentTarget.style.color = '#000000'}
-                   onMouseLeave={(e) => e.currentTarget.style.color = '#666666'}>
-                  Contact
                 </a>
               </div>
             </div>
@@ -684,8 +577,8 @@ export default function LandingPage() {
             flexWrap: 'wrap',
             gap: '16px'
           }}>
-            <p style={{ color: '#999999', margin: 0, fontSize: '14px' }}>
-              © 2025 Asano - SAE 501 - IUT de Haguenau
+            <p style={{ color: '#000000', margin: 0, fontSize: '14px', fontWeight: '500' }}>
+              Réalisé par DEPELI Altan
             </p>
           </div>
         </div>

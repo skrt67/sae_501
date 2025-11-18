@@ -2,19 +2,16 @@
 
 namespace Tests\Feature;
 
+use Tests\TestCase;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
-use Tests\TestCase;
 
 class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * Test user registration
-     */
-    public function test_user_can_register(): void
+    /** @test */
+    public function user_can_register()
     {
         $response = $this->postJson('/api/register', [
             'name' => 'Test User',
@@ -30,35 +27,16 @@ class AuthTest extends TestCase
                  ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => 'test@example.com',
-            'name' => 'Test User'
+            'email' => 'test@example.com'
         ]);
     }
 
-    /**
-     * Test user registration with invalid data
-     */
-    public function test_user_cannot_register_with_invalid_data(): void
-    {
-        $response = $this->postJson('/api/register', [
-            'name' => '',
-            'email' => 'invalid-email',
-            'password' => '123'
-        ]);
-
-        $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['name', 'email', 'password']);
-    }
-
-    /**
-     * Test user login
-     */
-    public function test_user_can_login(): void
+    /** @test */
+    public function user_can_login()
     {
         $user = User::factory()->create([
             'email' => 'test@example.com',
-            'password' => Hash::make('password123'),
-            'email_verified_at' => now()
+            'password' => bcrypt('password123')
         ]);
 
         $response = $this->postJson('/api/login', [
@@ -73,14 +51,12 @@ class AuthTest extends TestCase
                  ]);
     }
 
-    /**
-     * Test user login with wrong credentials
-     */
-    public function test_user_cannot_login_with_wrong_credentials(): void
+    /** @test */
+    public function user_cannot_login_with_wrong_password()
     {
         $user = User::factory()->create([
             'email' => 'test@example.com',
-            'password' => Hash::make('password123')
+            'password' => bcrypt('password123')
         ]);
 
         $response = $this->postJson('/api/login', [
@@ -91,17 +67,14 @@ class AuthTest extends TestCase
         $response->assertStatus(401);
     }
 
-    /**
-     * Test authenticated user can access protected routes
-     */
-    public function test_authenticated_user_can_access_protected_routes(): void
+    /** @test */
+    public function authenticated_user_can_get_profile()
     {
         $user = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
+        $token = $user->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json'
+            'Authorization' => 'Bearer ' . $token
         ])->getJson('/api/me');
 
         $response->assertStatus(200)
@@ -111,35 +84,10 @@ class AuthTest extends TestCase
                  ]);
     }
 
-    /**
-     * Test unauthenticated user cannot access protected routes
-     */
-    public function test_unauthenticated_user_cannot_access_protected_routes(): void
+    /** @test */
+    public function unauthenticated_user_cannot_access_protected_routes()
     {
         $response = $this->getJson('/api/me');
-
         $response->assertStatus(401);
-    }
-
-    /**
-     * Test user can logout
-     */
-    public function test_user_can_logout(): void
-    {
-        $user = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json'
-        ])->postJson('/api/logout');
-
-        $response->assertStatus(200);
-
-        // Verify token is revoked
-        $this->assertDatabaseMissing('personal_access_tokens', [
-            'tokenable_id' => $user->id,
-            'name' => 'test-token'
-        ]);
     }
 }

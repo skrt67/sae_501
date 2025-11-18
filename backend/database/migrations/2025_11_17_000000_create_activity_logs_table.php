@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('activity_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('project_id')->constrained()->onDelete('cascade');
+            $table->foreignId('project_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('action'); // created, updated, deleted, moved, assigned
             $table->string('entity_type'); // task, epic, sprint, project
             $table->unsignedBigInteger('entity_id');

@@ -18,13 +18,27 @@ class TaskController extends Controller
     {
         $user = $request->user();
         
-        // Retourner uniquement les tâches des projets dont l'utilisateur est membre
-        return Task::with('project','sprint','epic','assignee')
-            ->whereHas('project.users', function($query) use ($user) {
-                $query->where('users.id', $user->id);
-            })
-            ->latest()
-            ->paginate(20);
+        $query = Task::with('project','sprint','epic','assignee')
+            ->whereHas('project.users', function($q) use ($user) {
+                $q->where('users.id', $user->id);
+            });
+        
+        // Filtrer par projet si spécifié
+        if ($request->has('project_id')) {
+            $query->where('project_id', $request->input('project_id'));
+        }
+        
+        // Filtrer par sprint si spécifié
+        if ($request->has('sprint_id')) {
+            $query->where('sprint_id', $request->input('sprint_id'));
+        }
+        
+        // Filtrer par epic si spécifié
+        if ($request->has('epic_id')) {
+            $query->where('epic_id', $request->input('epic_id'));
+        }
+        
+        return $query->latest()->paginate(20);
     }
 
     /**

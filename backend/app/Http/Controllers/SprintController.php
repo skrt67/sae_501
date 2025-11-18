@@ -14,13 +14,17 @@ class SprintController extends Controller
     {
         $user = $request->user();
         
-        // Retourner uniquement les sprints des projets dont l'utilisateur est membre
-        return Sprint::with('project')
-            ->whereHas('project.users', function($query) use ($user) {
-                $query->where('users.id', $user->id);
-            })
-            ->latest('starts_at')
-            ->paginate(20);
+        $query = Sprint::with('project')
+            ->whereHas('project.users', function($q) use ($user) {
+                $q->where('users.id', $user->id);
+            });
+        
+        // Filtrer par projet si spécifié
+        if ($request->has('project_id')) {
+            $query->where('project_id', $request->input('project_id'));
+        }
+        
+        return $query->latest('starts_at')->paginate(20);
     }
 
     /**

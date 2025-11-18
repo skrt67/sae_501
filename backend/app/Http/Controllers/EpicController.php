@@ -14,14 +14,18 @@ class EpicController extends Controller
     {
         $user = $request->user();
         
-        // Retourner uniquement les epics des projets dont l'utilisateur est membre
-        return Epic::with('project')
+        $query = Epic::with('project')
             ->withCount('tasks')
-            ->whereHas('project.users', function($query) use ($user) {
-                $query->where('users.id', $user->id);
-            })
-            ->latest()
-            ->paginate(20);
+            ->whereHas('project.users', function($q) use ($user) {
+                $q->where('users.id', $user->id);
+            });
+        
+        // Filtrer par projet si spécifié
+        if ($request->has('project_id')) {
+            $query->where('project_id', $request->input('project_id'));
+        }
+        
+        return $query->latest()->paginate(20);
     }
 
     /**

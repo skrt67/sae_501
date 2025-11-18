@@ -10,8 +10,6 @@ use App\Http\Controllers\BoardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserSettingsController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\InvitationController;
-use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProjectMemberController;
 use App\Http\Controllers\ExportController;
@@ -30,17 +28,33 @@ Route::post('/password/forgot', [App\Http\Controllers\PasswordResetController::c
 Route::post('/password/reset', [App\Http\Controllers\PasswordResetController::class, 'reset']);
 Route::post('/password/verify-token', [App\Http\Controllers\PasswordResetController::class, 'verifyToken']);
 
-// Email Verification
+// Email Verification - Route publique avec signature
+Route::get('/email/verify/{id}/{hash}', function (Illuminate\Http\Request $request) {
+    $user = \App\Models\User::findOrFail($request->route('id'));
+    
+    if (!hash_equals((string) $request->route('hash'), sha1($user->getEmailForVerification()))) {
+        return response()->json(['message' => 'Lien de vérification invalide'], 403);
+    }
+    
+    if ($user->hasVerifiedEmail()) {
+        return redirect(env('APP_FRONTEND_URL') . '/login?verified=already');
+    }
+    
+    $user->markEmailAsVerified();
+    
+    return redirect(env('APP_FRONTEND_URL') . '/login?verified=success');
+})->middleware('signed')->name('verification.verify');
+
+// Email Verification - Renvoyer l'email (nécessite auth)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email/verification-notification', function (Illuminate\Http\Request $request) {
+        if ($request->user()->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Email déjà vérifié'], 400);
+        }
+        
         $request->user()->sendEmailVerificationNotification();
         return response()->json(['message' => 'Email de vérification envoyé']);
     })->middleware('throttle:6,1')->name('verification.send');
-
-    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-        $request->fulfill();
-        return response()->json(['message' => 'Email vérifié avec succès']);
-    })->middleware('signed')->name('verification.verify');
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -78,7 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/roadmap', [BoardController::class, 'roadmap']);
 
     // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/dashboard', DashboardController::class);
 
 
 
