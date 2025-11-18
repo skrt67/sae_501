@@ -7,18 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Project extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\LogsActivity;
 
     protected $fillable = [
         'name',
         'description',
-        'workspace_id',
     ];
-
-    public function workspace()
-    {
-        return $this->belongsTo(Workspace::class);
-    }
 
     public function users()
     {

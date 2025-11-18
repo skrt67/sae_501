@@ -59,7 +59,7 @@ export default function GlobalSearch({ visible, onClose }: GlobalSearchProps) {
         })
       }
     } catch (error) {
-      console.error('Erreur recherche:', error)
+      // Erreur silencieuse
     } finally {
       setLoading(false)
     }

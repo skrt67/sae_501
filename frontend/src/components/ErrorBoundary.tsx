@@ -26,15 +26,8 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log to console in development
-    console.error('❌ UI Error:', error)
-    console.error('📍 Error Info:', errorInfo)
-    
     // Store errorInfo for display
     this.setState({ errorInfo })
-    
-    // TODO: Log to external service in production
-    // logErrorToService(error, errorInfo)
   }
 
   render() {

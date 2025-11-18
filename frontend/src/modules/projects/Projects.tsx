@@ -1,47 +1,26 @@
-import React, { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { useNavigate } from 'react-router-dom'
+import { useProjects } from '../../hooks'
 import { Button, Modal, Form, Input, message } from 'antd'
-import { Plus, Folder, Users, Calendar, Trash2, Edit, UserPlus } from 'lucide-react'
-import ProjectMembersModal from '../../components/ProjectMembersModal'
-import { Project } from '../../types'
+import { Plus, Folder, Users, Calendar, Trash2, Edit, Mail } from 'lucide-react'
+import ProjectInviteModal from '../../components/ProjectInviteModal'
 
 export default function Projects() {
   const { token } = useAuth()
-  const { currentWorkspace } = useWorkspace()
   const navigate = useNavigate()
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
+  const { projects, loading, refetch } = useProjects()
+  
   const [modalOpen, setModalOpen] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [editProject, setEditProject] = useState<Project | null>(null)
-  const [membersModalOpen, setMembersModalOpen] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [editProject, setEditProject] = useState<any | null>(null)
+  const [inviteModalOpen, setInviteModalOpen] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<any | null>(null)
   const [form] = Form.useForm()
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/login')
-      return
-    }
-    loadProjects()
-  }, [token, navigate])
-
-  const loadProjects = async () => {
-    setLoading(true)
-    try {
-      const resp = await fetch('/api/projects', { 
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } 
-      })
-      if (!resp.ok) throw new Error('Erreur de chargement')
-      const data = await resp.json()
-      setProjects(Array.isArray(data) ? data : (data.data || []))
-    } catch (e) {
-      message.error('Impossible de charger les projets')
-    } finally {
-      setLoading(false)
-    }
+  if (!token) {
+    navigate('/login')
+    return null
   }
 
   const openCreateModal = () => {
@@ -62,19 +41,8 @@ export default function Projects() {
   const handleSubmit = async (values: any) => {
     setCreating(true)
     try {
-      if (!currentWorkspace && !editProject) {
-        message.error('Veuillez sélectionner un workspace')
-        setCreating(false)
-        return
-      }
-
       const url = editProject ? `/api/projects/${editProject.id}` : '/api/projects'
       const method = editProject ? 'PUT' : 'POST'
-
-      // Ajouter le workspace_id pour les nouveaux projets
-      const payload = editProject
-        ? values
-        : { ...values, workspace_id: currentWorkspace?.id }
 
       const resp = await fetch(url, {
         method,
@@ -82,7 +50,7 @@ export default function Projects() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(values)
       })
 
       if (!resp.ok) {
@@ -90,10 +58,10 @@ export default function Projects() {
         throw new Error(error.message || 'Erreur')
       }
 
-      message.success(editProject ? 'Projet modifié' : 'Projet créé et partagé avec tous les membres du workspace')
+      message.success(editProject ? 'Projet modifié' : 'Projet créé avec succès')
       setModalOpen(false)
       form.resetFields()
-      loadProjects()
+      refetch()
     } catch (e: any) {
       message.error(e.message || 'Erreur lors de l\'enregistrement')
     } finally {
@@ -113,169 +81,181 @@ export default function Projects() {
       if (!resp.ok) throw new Error('Erreur')
       
       message.success('Projet supprimé')
-      loadProjects()
+      refetch()
     } catch (e) {
       message.error('Erreur lors de la suppression')
     }
   }
 
-  const openMembersModal = (project) => {
+  const openInviteModal = (project) => {
     setSelectedProject(project)
-    setMembersModalOpen(true)
+    setInviteModalOpen(true)
   }
 
   if (!token) return null
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-page)', padding: '32px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <h1 style={{ fontSize: '32px', fontWeight: '700', color: 'var(--text)', margin: '0 0 8px 0' }}>
-            Projets
-          </h1>
-          <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-            Gérez vos projets et leurs sprints
-          </p>
-        </div>
-        <Button 
-          type="primary" 
-          onClick={openCreateModal}
-          icon={<Plus size={18} />}
-          style={{ 
-            background: 'var(--primary)', 
-            borderColor: 'var(--primary)', 
-            borderRadius: 'var(--radius-md)', 
-            height: '44px', 
-            padding: '0 24px', 
-            fontWeight: 500,
-            fontSize: '15px'
-          }}
-        >
-          Nouveau projet
-        </Button>
-      </div>
-
-      {/* Projects Grid */}
-      {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="card" style={{ height: '200px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '24px' }}>
-              <div style={{ width: '100%', height: '20px', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)', marginBottom: '12px' }} />
-              <div style={{ width: '70%', height: '16px', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)', marginBottom: '12px' }} />
-              <div style={{ width: '50%', height: '14px', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)' }} />
-            </div>
-          ))}
-        </div>
-      ) : projects.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '64px 24px' }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-xl)', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-            <Folder size={40} style={{ color: 'var(--text-muted)' }} />
+    <div style={{ minHeight: '100vh', background: '#f8f9fa', padding: '60px 40px' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ marginBottom: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h1 style={{ fontSize: '42px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0', letterSpacing: '-0.02em' }}>
+              Projets
+            </h1>
+            <p style={{ color: 'rgba(0, 0, 0, 0.65)', margin: 0, fontSize: '18px' }}>
+              Gérez vos projets et leurs sprints
+            </p>
           </div>
-          <h3 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--text)', marginBottom: '12px' }}>
-            Aucun projet
-          </h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '15px' }}>
-            Créez votre premier projet pour commencer
-          </p>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             onClick={openCreateModal}
             icon={<Plus size={18} />}
-            style={{ 
-              background: 'var(--primary)', 
-              borderColor: 'var(--primary)', 
-              height: '44px', 
-              padding: '0 24px', 
-              borderRadius: 'var(--radius-md)', 
-              fontWeight: 500 
+            style={{
+              background: '#000000',
+              borderColor: '#000000',
+              borderRadius: '8px',
+              height: '44px',
+              padding: '0 24px',
+              fontWeight: 500,
+              fontSize: '15px'
             }}
           >
-            Créer un projet
+            Nouveau projet
           </Button>
         </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
-          {projects.map((project) => (
-            <div 
-              key={project.id}
-              className="card"
-              style={{ 
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '24px',
-                cursor: 'pointer',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-              onClick={() => navigate('/kanban')}
-            >
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', background: 'var(--primary)' + '15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Folder size={24} style={{ color: 'var(--primary)' }} />
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      openMembersModal(project)
-                    }}
-                    style={{ width: '32px', height: '32px', border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', transition: 'all 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--primary)' + '15'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    title="Gérer les membres"
-                  >
-                    <UserPlus size={16} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      openEditModal(project)
-                    }}
-                    style={{ width: '32px', height: '32px', border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', transition: 'all 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteProject(project.id)
-                    }}
-                    style={{ width: '32px', height: '32px', border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--error)', transition: 'all 0.2s' }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--error)' + '15'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
 
-              {/* Content */}
-              <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', marginBottom: '8px' }}>
-                {project.name}
-              </h3>
-              <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5', minHeight: '42px' }}>
-                {project.description || 'Aucune description'}
-              </p>
-
-              {/* Footer */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                  <Users size={14} />
-                  <span>{project.users?.length || 0} membres</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                  <Calendar size={14} />
-                  <span>{project.sprints?.length || 0} sprints</span>
-                </div>
+        {/* Projects Grid */}
+        {loading ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="card" style={{ height: '200px', background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.06)', borderRadius: '12px', padding: '24px' }}>
+                <div style={{ width: '100%', height: '20px', background: 'rgba(0, 0, 0, 0.04)', borderRadius: '4px', marginBottom: '12px' }} />
+                <div style={{ width: '70%', height: '16px', background: 'rgba(0, 0, 0, 0.04)', borderRadius: '4px', marginBottom: '12px' }} />
+                <div style={{ width: '50%', height: '14px', background: 'rgba(0, 0, 0, 0.04)', borderRadius: '4px' }} />
               </div>
+            ))}
+          </div>
+        ) : projects.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 24px', background: '#ffffff', borderRadius: '12px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+            <div style={{ width: '80px', height: '80px', borderRadius: '16px', background: 'rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+              <Folder size={40} style={{ color: '#1a1a1a' }} />
             </div>
-          ))}
-        </div>
-      )}
+            <h3 style={{ fontSize: '28px', fontWeight: '600', color: '#1a1a1a', marginBottom: '12px' }}>
+              Aucun projet
+            </h3>
+            <p style={{ color: 'rgba(0, 0, 0, 0.65)', marginBottom: '32px', fontSize: '16px' }}>
+              Créez votre premier projet pour commencer
+            </p>
+            <Button
+              type="primary"
+              onClick={openCreateModal}
+              icon={<Plus size={18} />}
+              style={{
+                background: '#000000',
+                borderColor: '#000000',
+                height: '48px',
+                padding: '0 32px',
+                borderRadius: '8px',
+                fontWeight: 500,
+                fontSize: '16px'
+              }}
+            >
+              Créer un projet
+            </Button>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+            {projects.map((project) => (
+              <div
+                key={project.id}
+                className="card"
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid rgba(0, 0, 0, 0.06)',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+                }}
+                onClick={() => navigate('/kanban')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)'
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)'
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'rgba(0, 0, 0, 0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Folder size={24} style={{ color: '#1a1a1a' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openInviteModal(project)
+                      }}
+                      style={{ width: '32px', height: '32px', border: 'none', background: 'transparent', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1890ff', transition: 'all 0.2s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(24, 144, 255, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      title="Inviter par email"
+                    >
+                      <Mail size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openEditModal(project)
+                      }}
+                      style={{ width: '32px', height: '32px', border: 'none', background: 'transparent', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(0, 0, 0, 0.65)', transition: 'all 0.2s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteProject(project.id)
+                      }}
+                      style={{ width: '32px', height: '32px', border: 'none', background: 'transparent', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff4d4f', transition: 'all 0.2s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 77, 79, 0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
+                  {project.name}
+                </h3>
+                <p style={{ fontSize: '14px', color: 'rgba(0, 0, 0, 0.65)', marginBottom: '16px', lineHeight: '1.5', minHeight: '42px' }}>
+                  {project.description || 'Aucune description'}
+                </p>
+
+                {/* Footer */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingTop: '16px', borderTop: '1px solid rgba(0, 0, 0, 0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'rgba(0, 0, 0, 0.65)' }}>
+                    <Users size={14} />
+                    <span>{project.users?.length || 0} membres</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'rgba(0, 0, 0, 0.65)' }}>
+                    <Calendar size={14} />
+                    <span>{project.sprints?.length || 0} sprints</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Modal */}
       <Modal
@@ -312,24 +292,24 @@ export default function Projects() {
           </Form.Item>
           
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            <Button 
+            <Button
               onClick={() => {
                 setModalOpen(false)
                 form.resetFields()
               }}
-              style={{ height: '40px', borderRadius: 'var(--radius-md)' }}
+              style={{ height: '40px', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.15)', background: 'transparent', color: '#1a1a1a' }}
             >
               Annuler
             </Button>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
+            <Button
+              type="primary"
+              htmlType="submit"
               loading={creating}
-              style={{ 
-                height: '40px', 
-                borderRadius: 'var(--radius-md)', 
-                background: 'var(--primary)', 
-                borderColor: 'var(--primary)' 
+              style={{
+                height: '40px',
+                borderRadius: '8px',
+                background: '#000000',
+                borderColor: '#000000'
               }}
             >
               {editProject ? 'Modifier' : 'Créer'}
@@ -338,15 +318,15 @@ export default function Projects() {
         </Form>
       </Modal>
 
-      {/* Modal de gestion des membres */}
-      <ProjectMembersModal
-        visible={membersModalOpen}
+      {/* Modal d'invitation par email */}
+      <ProjectInviteModal
+        projectId={selectedProject?.id || null}
+        projectName={selectedProject?.name || ''}
+        visible={inviteModalOpen}
         onClose={() => {
-          setMembersModalOpen(false)
+          setInviteModalOpen(false)
           setSelectedProject(null)
         }}
-        project={selectedProject}
-        onMembersUpdated={loadProjects}
       />
     </div>
   )

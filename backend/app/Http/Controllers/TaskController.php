@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\Sprint;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+
 
 class TaskController extends Controller
 {
@@ -68,6 +70,9 @@ class TaskController extends Controller
         if (!empty($dependencies)) {
             $task->dependencies()->sync($dependencies);
         }
+
+
+
         return response()->json($task->load('project','sprint','epic','assignee','dependencies'), 201);
     }
 
@@ -134,10 +139,17 @@ class TaskController extends Controller
         $dependencies = $data['dependencies'] ?? null;
         unset($data['dependencies']);
 
+        // Vérifier si l'assignation a changé
+        $oldAssigneeId = $task->assignee_id;
+        $newAssigneeId = $data['assignee_id'] ?? null;
+
         $task->update($data);
         if (is_array($dependencies)) {
             $task->dependencies()->sync($dependencies);
         }
+
+
+
         return $task->load('project','sprint','epic','assignee','dependencies');
     }
 

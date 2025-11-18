@@ -1,20 +1,32 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useAuth } from '../auth/AuthContext'
-import { Plus, Calendar, User, Pencil, X } from 'lucide-react'
+import { Plus, Calendar, Pencil } from 'lucide-react'
 import { Modal, Form, Input, Button, message, DatePicker, Select } from 'antd'
 import dayjs, { Dayjs } from 'dayjs'
 import RichTextEditor from '../tasks/RichTextEditor'
 
 const { Option } = Select
 
+interface Epic {
+  id: number
+  name: string
+  color: string
+}
+
 interface Task {
   id: number
   title: string
   description?: string
   status: string
-  assigned_to?: number
+  epic?: Epic
+  epic_id?: number
+  assignee?: {
+    id: number
+    name: string
+    avatar_url?: string
+  }
   due_date?: string
 }
 
@@ -44,6 +56,7 @@ interface Project {
   id: number
   name: string
   has_active_sprint?: boolean
+  users?: User[]
 }
 
 export default function KanbanModern() {
@@ -59,25 +72,30 @@ export default function KanbanModern() {
   const [newDescription, setNewDescription] = useState('')
   const [newStatus, setNewStatus] = useState('todo')
   const [newAssignee, setNewAssignee] = useState<number | null>(null)
+  const [newEpicId, setNewEpicId] = useState<number | null>(null)
   const [newDueDate, setNewDueDate] = useState<string | null>(null)
+  const [epics, setEpics] = useState<Epic[]>([])
   const [editTask, setEditTask] = useState<Task | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editAssignee, setEditAssignee] = useState<number | null>(null)
+  const [editEpicId, setEditEpicId] = useState<number | null>(null)
   const [editDueDate, setEditDueDate] = useState<Dayjs | null>(null)
   const [users, setUsers] = useState<User[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
+  const [sprints, setSprints] = useState<Sprint[]>([])
+  const [selectedSprintId, setSelectedSprintId] = useState<number | null>(null)
 
+  // Charger les projets au démarrage
   useEffect(() => {
     if (!token) {
       navigate('/login')
       return
     }
 
-    const fetchData = async () => {
+    const fetchProjects = async () => {
       setLoading(true)
-      setError('')
       try {
         const projectResp = await fetch('/api/projects', { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } })
         if (!projectResp.ok) {
@@ -88,26 +106,54 @@ export default function KanbanModern() {
         const projectList = Array.isArray(projectData) ? projectData : (Array.isArray(projectData?.data) ? projectData.data : [])
         setProjects(projectList)
 
-        let currentProjectId = null
-        if (projectList.length > 0) {
-          const activeProject = projectList.find(p => p.has_active_sprint)
-          currentProjectId = activeProject ? activeProject.id : projectList[0].id
+        // Vérifier si on a un projectId dans l'URL (priorité)
+        const urlParams = new URLSearchParams(window.location.search)
+        const urlProjectId = urlParams.get('project')
+        
+        if (urlProjectId) {
+          const projectId = parseInt(urlProjectId, 10)
+          if (!isNaN(projectId) && projectList.some(p => p.id === projectId)) {
+            setSelectedProjectId(projectId)
+            // Nettoyer l'URL
+            window.history.replaceState({}, '', '/kanban')
+            return // Important: sortir ici pour ne pas écraser
+          }
         }
-        setSelectedProjectId(currentProjectId)
+        
+        // Sinon, sélectionner automatiquement
+        if (projectList.length > 0 && !selectedProjectId) {
+          const activeProject = projectList.find(p => p.has_active_sprint)
+          const currentProjectId = activeProject ? activeProject.id : projectList[0].id
+          setSelectedProjectId(currentProjectId)
+        } else if (projectList.length === 0) {
+          // Pas de projet, arrêter le loading
+          setLoading(false)
+        }
+      } catch (e) {
+        setError(e.message || 'Impossible de charger les projets')
+        setLoading(false)
+      }
+    }
 
-        // Charger les utilisateurs du projet sélectionné
+    fetchProjects()
+  }, [token, navigate])
+
+  // Charger les données du projet sélectionné
+  useEffect(() => {
+    if (!token || !selectedProjectId) return
+
+    const fetchProjectData = async () => {
+      try {
+        // Charger les utilisateurs
         let projectUsers: any[] = []
-        if (currentProjectId) {
-          const selectedProject = projectList.find(p => p.id === currentProjectId)
-          if (selectedProject && selectedProject.users && selectedProject.users.length > 0) {
-            projectUsers = selectedProject.users
-          } else {
-            // Fallback: charger depuis l'API projet spécifique
-            const projResp = await fetch(`/api/projects/${currentProjectId}`, { headers: { Authorization: `Bearer ${token}` } })
-            if (projResp.ok) {
-              const projData = await projResp.json()
-              projectUsers = projData.users || []
-            }
+        const selectedProject = projects.find(p => p.id === selectedProjectId)
+        if (selectedProject && selectedProject.users && selectedProject.users.length > 0) {
+          projectUsers = selectedProject.users
+        } else {
+          const projResp = await fetch(`/api/projects/${selectedProjectId}`, { headers: { Authorization: `Bearer ${token}` } })
+          if (projResp.ok) {
+            const projData = await projResp.json()
+            projectUsers = projData.users || []
           }
         }
 
@@ -119,21 +165,60 @@ export default function KanbanModern() {
         
         setUsers(projectUsers)
 
-        if (currentProjectId) {
-          const kanbanResp = await fetch(`/api/kanban?project_id=${currentProjectId}`, { headers: { Authorization: `Bearer ${token}` } })
-          if (kanbanResp.status === 404) {
-            setBoard({ columns: { todo: [], in_progress: [], done: [] }, sprint: null })
-          } else if (!kanbanResp.ok) {
-            const t = await kanbanResp.text().catch(() => '')
-            let msg = 'Erreur de chargement du Kanban'
-            try { const j = JSON.parse(t); msg = j.message || msg } catch { /* ignore */ }
-            throw new Error(msg)
-          } else {
-            const kanbanData = await kanbanResp.json()
-            setBoard(kanbanData)
+        // Charger les epics
+        const epicsResp = await fetch(`/api/epics?project_id=${selectedProjectId}`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } })
+        if (epicsResp.ok) {
+          const epicsData = await epicsResp.json()
+          const epicsList = Array.isArray(epicsData) ? epicsData : (epicsData.data || [])
+          setEpics(epicsList)
+        }
+
+        // Charger les sprints
+        const sprintsResp = await fetch(`/api/sprints?project_id=${selectedProjectId}`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } })
+        if (sprintsResp.ok) {
+          const sprintsData = await sprintsResp.json()
+          const sprintsList = Array.isArray(sprintsData) ? sprintsData : (sprintsData.data || [])
+          setSprints(sprintsList)
+          
+          // Sélectionner le sprint actif par défaut si aucun sprint n'est sélectionné
+          if (!selectedSprintId && sprintsList.length > 0) {
+            const activeSprint = sprintsList.find(s => s.is_active)
+            if (activeSprint) {
+              setSelectedSprintId(activeSprint.id)
+            } else {
+              setSelectedSprintId(sprintsList[0].id)
+            }
           }
+        }
+      } catch (e) {
+        // Erreur silencieuse
+      }
+    }
+
+    fetchProjectData()
+  }, [token, selectedProjectId, projects])
+
+  // Charger le kanban quand le sprint change
+  useEffect(() => {
+    if (!token || !selectedProjectId) return
+
+    const fetchKanban = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const sprintParam = selectedSprintId ? `&sprint_id=${selectedSprintId}` : ''
+        const kanbanResp = await fetch(`/api/kanban?project_id=${selectedProjectId}${sprintParam}`, { headers: { Authorization: `Bearer ${token}` } })
+        
+        if (kanbanResp.status === 404) {
+          setBoard({ columns: { todo: [], in_progress: [], done: [] }, sprint: null })
+        } else if (!kanbanResp.ok) {
+          const t = await kanbanResp.text().catch(() => '')
+          let msg = 'Erreur de chargement du Kanban'
+          try { const j = JSON.parse(t); msg = j.message || msg } catch { /* ignore */ }
+          throw new Error(msg)
         } else {
-          setBoard(null)
+          const kanbanData = await kanbanResp.json()
+          setBoard(kanbanData)
         }
       } catch (e) {
         setError(e.message || 'Impossible de charger le Kanban')
@@ -142,8 +227,8 @@ export default function KanbanModern() {
       }
     }
 
-    fetchData()
-  }, [token, navigate, selectedProjectId])
+    fetchKanban()
+  }, [token, selectedProjectId, selectedSprintId])
 
   useEffect(() => {
     if (location?.state?.openCreateTask) {
@@ -212,6 +297,7 @@ export default function KanbanModern() {
     setNewDescription('')
     setNewStatus(status)
     setNewAssignee(null)
+    setNewEpicId(null)
     setNewDueDate(null)
     setTaskModalOpen(true)
   }
@@ -231,6 +317,7 @@ export default function KanbanModern() {
         project_id: selectedProjectId,
         status: newStatus,
         assignee_id: newAssignee || null,
+        epic_id: newEpicId || null,
         due_date: newDueDate,
       }
       const resp = await fetch('/api/tasks', {
@@ -259,6 +346,7 @@ export default function KanbanModern() {
     setEditTitle(task.title || '')
     setEditDescription(task.description || '')
     setEditAssignee(task.assignee?.id || null)
+    setEditEpicId(task.epic?.id || null)
     setEditDueDate(task.due_date ? dayjs(task.due_date) : null)
   }
 
@@ -269,6 +357,7 @@ export default function KanbanModern() {
         title: editTitle.trim(),
         description: editDescription,
         assignee_id: editAssignee || null,
+        epic_id: editEpicId || null,
         due_date: editDueDate ? editDueDate.format('YYYY-MM-DD') : null,
         project_id: selectedProjectId,
       }
@@ -324,8 +413,8 @@ export default function KanbanModern() {
   if (projects.length === 0 || error || !board) {
     return (
       <div style={{ padding: '80px 48px', textAlign: 'center', maxWidth: '600px', margin: '0 auto', background: '#ffffff', borderRadius: '12px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
-        <div style={{ width: '80px', height: '80px', background: 'rgba(24, 144, 255, 0.1)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-          <Plus size={40} style={{ color: '#1890ff' }} />
+        <div style={{ width: '80px', height: '80px', background: 'rgba(0, 0, 0, 0.06)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+          <Plus size={40} style={{ color: '#1a1a1a' }} />
         </div>
         <h2 style={{ fontSize: '28px', fontWeight: '600', color: '#1a1a1a', marginBottom: '12px' }}>
           {error ? 'Erreur' : 'Aucun projet trouvé'}
@@ -333,7 +422,7 @@ export default function KanbanModern() {
         <p style={{ color: 'rgba(0, 0, 0, 0.65)', marginBottom: '32px', fontSize: '16px' }}>
           {error || 'Créez un projet pour commencer à utiliser le Kanban'}
         </p>
-        <Button type="primary" onClick={() => navigate('/projects')} style={{ background: '#1890ff', borderColor: '#1890ff', borderRadius: '8px', height: '48px', padding: '0 32px', fontWeight: 500, fontSize: '16px' }}>
+        <Button type="primary" onClick={() => navigate('/projects')} style={{ background: '#000000', borderColor: '#000000', borderRadius: '8px', height: '48px', padding: '0 32px', fontWeight: 500, fontSize: '16px' }}>
           Créer un projet
         </Button>
       </div>
@@ -341,9 +430,9 @@ export default function KanbanModern() {
   }
 
   const columns = [
-    { key: 'todo', title: 'À faire', color: '#6f767e', count: board?.columns?.todo.length || 0 },
-    { key: 'in_progress', title: 'En cours', color: '#667eea', count: board?.columns?.in_progress.length || 0 },
-    { key: 'done', title: 'Terminé', color: '#11998e', count: board?.columns?.done.length || 0 },
+    { key: 'todo', title: 'À faire', color: 'rgba(0, 0, 0, 0.45)', count: board?.columns?.todo.length || 0 },
+    { key: 'in_progress', title: 'En cours', color: 'rgba(0, 0, 0, 0.65)', count: board?.columns?.in_progress.length || 0 },
+    { key: 'done', title: 'Terminé', color: '#000000', count: board?.columns?.done.length || 0 },
   ]
 
   return (
@@ -363,11 +452,13 @@ export default function KanbanModern() {
             value={selectedProjectId}
             onChange={(value) => {
               setSelectedProjectId(value)
-              window.location.reload()
+              setSelectedSprintId(null)
+              setSprints([])
+              setBoard(null)
             }}
-            style={{ width: 250 }}
+            style={{ width: 200 }}
             size="large"
-            placeholder="Sélectionner un projet"
+            placeholder="Projet"
           >
             {projects.map((p) => (
               <Option key={p.id} value={p.id}>
@@ -375,11 +466,27 @@ export default function KanbanModern() {
               </Option>
             ))}
           </Select>
-          <Button 
-            type="primary" 
-            onClick={() => openCreateTask('todo')} 
+          <Select
+            value={selectedSprintId}
+            onChange={(value) => {
+              setSelectedSprintId(value)
+            }}
+            style={{ width: 200 }}
+            size="large"
+            placeholder="Sprint"
+            disabled={!selectedProjectId || sprints.length === 0}
+          >
+            {sprints.map((s) => (
+              <Option key={s.id} value={s.id}>
+                {s.name}
+              </Option>
+            ))}
+          </Select>
+          <Button
+            type="primary"
+            onClick={() => openCreateTask('todo')}
             icon={<Plus size={18} />}
-            style={{ background: '#1890ff', borderColor: '#1890ff', borderRadius: '8px', height: '44px', padding: '0 24px', fontWeight: 500, fontSize: '15px' }}
+            style={{ background: '#000000', borderColor: '#000000', borderRadius: '8px', height: '44px', padding: '0 24px', fontWeight: 500, fontSize: '15px' }}
           >
             Nouvelle tâche
           </Button>
@@ -388,11 +495,11 @@ export default function KanbanModern() {
       
       {/* Alert si pas de sprint */}
       {!board?.sprint && (
-        <div style={{ 
-          maxWidth: '1600px', 
+        <div style={{
+          maxWidth: '1600px',
           margin: '0 auto 24px',
-          background: '#fff7e6',
-          border: '1px solid #ffd591',
+          background: '#ffffff',
+          border: '1px solid rgba(0, 0, 0, 0.15)',
           borderRadius: '8px',
           padding: '20px 24px',
           display: 'flex',
@@ -401,22 +508,21 @@ export default function KanbanModern() {
           gap: '24px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-            <span style={{ fontSize: '24px' }}>⚠️</span>
             <div>
-              <div style={{ fontWeight: 600, color: '#d48806', marginBottom: '4px', fontSize: '16px' }}>Aucun sprint actif</div>
+              <div style={{ fontWeight: 600, color: '#1a1a1a', marginBottom: '4px', fontSize: '16px' }}>Aucun sprint actif</div>
               <div style={{ fontSize: '14px', color: 'rgba(0, 0, 0, 0.65)' }}>
                 Créez un sprint pour pouvoir ajouter des tâches au Kanban
               </div>
             </div>
           </div>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             onClick={() => navigate('/roadmap')}
-            style={{ 
-              background: '#faad14', 
-              borderColor: '#faad14', 
-              borderRadius: '8px', 
-              height: '40px', 
+            style={{
+              background: '#000000',
+              borderColor: '#000000',
+              borderRadius: '8px',
+              height: '40px',
               padding: '0 20px',
               fontWeight: 500,
               flexShrink: 0
@@ -471,13 +577,13 @@ export default function KanbanModern() {
                     {...provided.droppableProps}
                     style={{
                       minHeight: '400px',
-                      background: snapshot.isDraggingOver ? 'rgba(24, 144, 255, 0.05)' : 'transparent',
+                      background: snapshot.isDraggingOver ? 'rgba(0, 0, 0, 0.02)' : 'transparent',
                       borderRadius: '8px',
                       padding: '4px',
                       transition: 'background 0.2s'
                     }}
                   >
-                    {board.columns[column.key].map((task, index) => (
+                    {(board?.columns?.[column.key] || []).map((task, index) => (
                       <Draggable draggableId={`${column.key}-${task.id}`} index={index} key={task.id}>
                         {(provided, snapshot) => (
                           <div
@@ -512,9 +618,28 @@ export default function KanbanModern() {
                           >
                             {/* Task Header */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
-                              <h4 style={{ fontSize: '14px', fontWeight: '500', color: '#1a1a1a', margin: 0, flex: 1, lineHeight: '1.4' }}>
-                                {task.title}
-                              </h4>
+                              <div style={{ flex: 1 }}>
+                                <h4 style={{ fontSize: '14px', fontWeight: '500', color: '#1a1a1a', margin: '0 0 8px 0', lineHeight: '1.4' }}>
+                                  {task.title}
+                                </h4>
+                                {task.epic && (
+                                  <div style={{ 
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    background: task.epic.color || '#d9d9d9',
+                                    color: '#ffffff',
+                                    padding: '3px 10px',
+                                    borderRadius: '12px',
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.3px'
+                                  }}>
+                                    {task.epic.name}
+                                  </div>
+                                )}
+                              </div>
                               <div style={{ display: 'flex', gap: '4px' }}>
                                 <button 
                                   onClick={() => openEditTask(task)}
@@ -552,17 +677,17 @@ export default function KanbanModern() {
 
                             {/* Task Description */}
                             {task.description && (
-                              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.5' }} dangerouslySetInnerHTML={{ __html: task.description.substring(0, 100) + (task.description.length > 100 ? '...' : '') }} />
+                              <div style={{ fontSize: '13px', color: 'rgba(0, 0, 0, 0.65)', marginBottom: '12px', lineHeight: '1.5' }} dangerouslySetInnerHTML={{ __html: task.description.substring(0, 100) + (task.description.length > 100 ? '...' : '') }} />
                             )}
 
                             {/* Task Footer */}
                             {(task.assignee || task.due_date) && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '12px', borderTop: '1px solid rgba(0, 0, 0, 0.06)' }}>
                                 {task.assignee && (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', overflow: 'hidden' }}>
+                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#000000', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', overflow: 'hidden' }}>
                                       {task.assignee.avatar_url ? (
-                                        <img 
+                                        <img
                                           src={task.assignee.avatar_url.startsWith('http') ? task.assignee.avatar_url : `http://localhost:8000${task.assignee.avatar_url}`}
                                           alt={task.assignee.name}
                                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -571,11 +696,11 @@ export default function KanbanModern() {
                                         task.assignee.name?.charAt(0).toUpperCase() || 'U'
                                       )}
                                     </div>
-                                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{task.assignee.name}</span>
+                                    <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.65)' }}>{task.assignee.name}</span>
                                   </div>
                                 )}
                                 {task.due_date && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'rgba(0, 0, 0, 0.65)' }}>
                                     <Calendar size={14} />
                                     <span>{dayjs(task.due_date).format('DD MMM')}</span>
                                   </div>
@@ -590,7 +715,7 @@ export default function KanbanModern() {
                     
                     {/* Empty State */}
                     {board.columns[column.key].length === 0 && (
-                      <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-subtle)', fontSize: '13px' }}>
+                      <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(0, 0, 0, 0.25)', fontSize: '13px' }}>
                         Aucune tâche
                       </div>
                     )}
@@ -620,6 +745,26 @@ export default function KanbanModern() {
             />
           </Form.Item>
           
+          <Form.Item label="Epic">
+            <Select
+              allowClear
+              placeholder="Sélectionner une epic (optionnel)"
+              value={newEpicId}
+              onChange={setNewEpicId}
+              style={{ width: '100%' }}
+              size="large"
+            >
+              {epics.map(epic => (
+                <Option key={epic.id} value={epic.id}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: epic.color }} />
+                    {epic.name}
+                  </div>
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <Form.Item label="Assigné à">
               <Select
@@ -646,10 +791,10 @@ export default function KanbanModern() {
           </Form.Item>
           
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            <Button onClick={() => setTaskModalOpen(false)} style={{ height: '40px', borderRadius: 'var(--radius-md)' }}>
+            <Button onClick={() => setTaskModalOpen(false)} style={{ height: '40px', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.15)', background: 'transparent', color: '#1a1a1a' }}>
               Annuler
             </Button>
-            <Button type="primary" htmlType="submit" loading={creating} style={{ height: '40px', borderRadius: 'var(--radius-md)', background: 'var(--primary)', borderColor: 'var(--primary)' }}>
+            <Button type="primary" htmlType="submit" loading={creating} style={{ height: '40px', borderRadius: '8px', background: '#000000', borderColor: '#000000' }}>
               Créer
             </Button>
           </div>
@@ -674,6 +819,26 @@ export default function KanbanModern() {
             />
           </Form.Item>
           
+          <Form.Item label="Epic">
+            <Select
+              allowClear
+              placeholder="Sélectionner une epic (optionnel)"
+              value={editEpicId}
+              onChange={setEditEpicId}
+              style={{ width: '100%' }}
+              size="large"
+            >
+              {epics.map(epic => (
+                <Option key={epic.id} value={epic.id}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: epic.color }} />
+                    {epic.name}
+                  </div>
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <Form.Item label="Assigné à">
               <Select
@@ -700,10 +865,10 @@ export default function KanbanModern() {
           </Form.Item>
           
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            <Button onClick={() => setEditTask(null)} style={{ height: '40px', borderRadius: 'var(--radius-md)' }}>
+            <Button onClick={() => setEditTask(null)} style={{ height: '40px', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.15)', background: 'transparent', color: '#1a1a1a' }}>
               Annuler
             </Button>
-            <Button type="primary" htmlType="submit" style={{ height: '40px', borderRadius: 'var(--radius-md)', background: 'var(--primary)', borderColor: 'var(--primary)' }}>
+            <Button type="primary" htmlType="submit" style={{ height: '40px', borderRadius: '8px', background: '#000000', borderColor: '#000000' }}>
               Enregistrer
             </Button>
           </div>

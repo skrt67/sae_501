@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../modules/auth/AuthContext'
-import { Badge, Drawer, Empty, Button, message, Tabs } from 'antd'
-import { Bell, Check, Trash2, Clock, UserPlus, AlertCircle, Mail, X, CheckCircle } from 'lucide-react'
+import { Badge, Drawer, Empty, Button, message } from 'antd'
+import { Bell, Trash2, Clock, UserPlus, AlertCircle, Mail } from 'lucide-react'
 import { Notification, Invitation, ProcessingState } from '../types'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -19,7 +19,7 @@ export default function NotificationCenter() {
   const [processing, setProcessing] = useState<ProcessingState>({})
 
   useEffect(() => {
-    if (token) {
+    if (token && user) {
       loadNotifications()
       loadInvitations()
       // Poll every 30 seconds
@@ -29,7 +29,7 @@ export default function NotificationCenter() {
       }, 30000)
       return () => clearInterval(interval)
     }
-  }, [token])
+  }, [token, user])
 
   const loadNotifications = async () => {
     if (!token) return
@@ -53,24 +53,20 @@ export default function NotificationCenter() {
 
   const loadInvitations = async () => {
     if (!token || !user?.email) return
-    
+
     try {
       const resp = await fetch('/api/invitations/received', {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
       })
       if (resp.ok) {
         const data = await resp.json()
-        console.log('📧 Invitations reçues:', data)
         // Filtrer uniquement les invitations en attente
         const pendingInvitations = (Array.isArray(data) ? data : (data.data || []))
-          .filter(inv => inv.status === 'pending')
-        console.log('📧 Invitations en attente:', pendingInvitations)
+          .filter((inv: Invitation) => inv.status === 'pending')
         setInvitations(pendingInvitations)
-      } else {
-        console.error('❌ Erreur invitations:', resp.status, await resp.text())
       }
     } catch (e) {
-      console.error('❌ Erreur chargement invitations:', e)
+      // Silent fail
       setInvitations([])
     }
   }
@@ -142,9 +138,9 @@ export default function NotificationCenter() {
       })
 
       if (resp.ok) {
-        message.success('Invitation acceptée ! Vous avez rejoint l\'équipe.')
+        message.success('Invitation acceptée ! Vous avez rejoint le projet.')
         loadInvitations()
-        // Recharger la page pour mettre à jour les workspaces
+        // Recharger la page pour mettre à jour les projets
         setTimeout(() => window.location.reload(), 1000)
       } else {
         const error = await resp.json()
@@ -265,14 +261,14 @@ export default function NotificationCenter() {
                       color: 'var(--text)', 
                       marginBottom: '4px'
                     }}>
-                      Invitation à rejoindre {invitation.workspace_name}
+                      Invitation au projet <strong>{invitation.project?.name || invitation.project_name || 'Projet'}</strong>
                     </div>
                     <div style={{ 
                       fontSize: '13px', 
                       color: 'var(--text-muted)', 
                       marginBottom: '12px'
                     }}>
-                      De {invitation.inviter_name}
+                      De {invitation.inviter_name} • Rôle : {invitation.role === 'owner' ? 'Propriétaire' : 'Membre'}
                     </div>
                     
                     <div style={{ display: 'flex', gap: '8px' }}>

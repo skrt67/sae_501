@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Spin, Progress, Calendar as AntCalendar, Badge } from 'antd'
-import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
 import { 
   TrendingUp, 
   CheckCircle, 
@@ -14,13 +12,13 @@ import {
   BarChart3,
   Activity
 } from 'lucide-react'
-import './Dashboard-light.css'
 
 interface Stats {
   totalProjects: number
   activeProjects: number
   totalTasks: number
   completedTasks: number
+  inProgressTasks: number
   totalUsers: number
   totalEpics: number
 }
@@ -33,6 +31,7 @@ export default function DashboardDuna() {
     activeProjects: 0,
     totalTasks: 0,
     completedTasks: 0,
+    inProgressTasks: 0,
     totalUsers: 0,
     totalEpics: 0
   })
@@ -71,7 +70,8 @@ export default function DashboardDuna() {
         setStats(prev => ({
           ...prev,
           totalTasks: tasks.length,
-          completedTasks: tasks.filter((t: any) => t.status === 'done').length
+          completedTasks: tasks.filter((t: any) => t.status === 'done').length,
+          inProgressTasks: tasks.filter((t: any) => t.status === 'in_progress').length
         }))
       }
 
@@ -86,7 +86,7 @@ export default function DashboardDuna() {
       }
 
     } catch (error) {
-      console.error('Erreur chargement stats:', error)
+      // Erreur silencieuse
     } finally {
       setLoading(false)
     }
@@ -422,7 +422,7 @@ export default function DashboardDuna() {
                   '0%': '#1890ff',
                   '100%': '#52c41a',
                 }}
-                strokeWidth={12}
+                size={12}
                 trailColor="#f0f0f0"
               />
               <div style={{ 
@@ -449,20 +449,20 @@ export default function DashboardDuna() {
                   </span>
                 </div>
                 <div style={{ flex: 1, textAlign: 'center' }}>
-                  <span style={{ 
-                    fontSize: '13px', 
+                  <span style={{
+                    fontSize: '13px',
                     color: 'rgba(0, 0, 0, 0.45)',
                     display: 'block',
                     marginBottom: '8px'
                   }}>
                     En cours
                   </span>
-                  <span style={{ 
-                    fontSize: '24px', 
-                    fontWeight: 600, 
-                    color: '#1890ff' 
+                  <span style={{
+                    fontSize: '24px',
+                    fontWeight: 600,
+                    color: '#1890ff'
                   }}>
-                    {Math.floor((stats.totalTasks - stats.completedTasks) / 2)}
+                    {stats.inProgressTasks}
                   </span>
                 </div>
                 <div style={{ flex: 1, textAlign: 'center' }}>
@@ -508,7 +508,8 @@ export default function DashboardDuna() {
             </div>
             <AntCalendar
               fullscreen={false}
-              dateCellRender={(date) => {
+              cellRender={(_, info) => {
+                if (info.type !== 'date') return null
                 // Exemple de badge pour les dates avec des tâches
                 const listData = [
                   // Vous pouvez ajouter vos données ici

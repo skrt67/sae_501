@@ -11,7 +11,7 @@ class Invitation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'workspace_id',
+        'project_id',
         'email',
         'token',
         'role',
@@ -25,7 +25,7 @@ class Invitation extends Model
     ];
 
     protected $appends = [
-        'workspace_name',
+        'project_name',
         'inviter_name',
     ];
 
@@ -43,9 +43,9 @@ class Invitation extends Model
         });
     }
 
-    public function workspace()
+    public function project()
     {
-        return $this->belongsTo(Workspace::class);
+        return $this->belongsTo(Project::class);
     }
 
     public function inviter()
@@ -63,9 +63,9 @@ class Invitation extends Model
         return $this->status === 'pending';
     }
 
-    public function getWorkspaceNameAttribute()
+    public function getProjectNameAttribute()
     {
-        return $this->workspace ? $this->workspace->name : null;
+        return $this->project ? $this->project->name : null;
     }
 
     public function getInviterNameAttribute()

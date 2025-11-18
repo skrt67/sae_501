@@ -14,6 +14,8 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProjectMemberController;
+use App\Http\Controllers\ExportController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 Route::get('/health', function () {
     return response()->json(['ok' => true]);
@@ -22,6 +24,25 @@ Route::get('/health', function () {
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// Password Reset
+Route::post('/password/forgot', [App\Http\Controllers\PasswordResetController::class, 'sendResetLink']);
+Route::post('/password/reset', [App\Http\Controllers\PasswordResetController::class, 'reset']);
+Route::post('/password/verify-token', [App\Http\Controllers\PasswordResetController::class, 'verifyToken']);
+
+// Email Verification
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/email/verification-notification', function (Illuminate\Http\Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return response()->json(['message' => 'Email de vérification envoyé']);
+    })->middleware('throttle:6,1')->name('verification.send');
+
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return response()->json(['message' => 'Email vérifié avec succès']);
+    })->middleware('signed')->name('verification.verify');
+});
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -60,25 +81,28 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
-    // Workspaces
-    Route::apiResource('workspaces', WorkspaceController::class);
-    Route::get('workspaces/{workspace}/members', [WorkspaceController::class, 'members']);
-    Route::delete('workspaces/{workspace}/members/{user}', [WorkspaceController::class, 'removeMember']);
-    Route::post('workspaces/{workspace}/leave', [WorkspaceController::class, 'leave']);
+
 
     // Project Members
     Route::get('projects/{project}/members', [ProjectMemberController::class, 'index']);
     Route::post('projects/{project}/members', [ProjectMemberController::class, 'store']);
     Route::delete('projects/{project}/members/{user}', [ProjectMemberController::class, 'destroy']);
 
-    // Invitations (scopées par workspace)
-    Route::get('workspaces/{workspace}/invitations', [InvitationController::class, 'index']);
-    Route::post('workspaces/{workspace}/invitations', [InvitationController::class, 'invite']);
+    // Project Invitations
+    Route::get('projects/{project}/invitations', [App\Http\Controllers\ProjectInvitationController::class, 'index']);
+    Route::post('projects/{project}/invitations', [App\Http\Controllers\ProjectInvitationController::class, 'invite']);
+    Route::post('invitations/{token}/accept', [App\Http\Controllers\ProjectInvitationController::class, 'accept']);
+
     // Invitations reçues par l'utilisateur connecté
-    Route::get('invitations/received', [InvitationController::class, 'received']);
-    // Accept/Reject par token public (toujours authentifié dans notre app)
-    Route::post('invitations/{token}/accept', [InvitationController::class, 'accept']);
-    Route::post('invitations/{token}/reject', [InvitationController::class, 'reject']);
-    Route::delete('invitations/{invitation}', [InvitationController::class, 'destroy']);
+    Route::get('invitations/received', [App\Http\Controllers\ProjectInvitationController::class, 'received']);
+    Route::delete('invitations/{invitation}', [App\Http\Controllers\ProjectInvitationController::class, 'destroy']);
+
+    // Export de données
+    Route::get('export/tasks/csv', [ExportController::class, 'exportTasksCSV']);
+    Route::get('export/tasks/excel', [ExportController::class, 'exportTasksExcel']);
+    Route::get('export/tasks/pdf', [ExportController::class, 'exportTasksPDF']);
+
+    // Activity Logs
+    Route::get('activities', [App\Http\Controllers\ActivityLogController::class, 'index']);
 });
 

@@ -12,6 +12,11 @@ php artisan serve --host=127.0.0.1 --port=8005 > /tmp/backend.log 2>&1 &
 BACKEND_PID=$!
 echo "   Backend PID: $BACKEND_PID"
 
+echo "📬 Démarrage du Queue Worker..."
+php artisan queue:work --tries=3 > /tmp/queue.log 2>&1 &
+QUEUE_PID=$!
+echo "   Queue Worker PID: $QUEUE_PID"
+
 sleep 2
 
 echo "🚀 Démarrage du frontend Vite..."
@@ -33,9 +38,10 @@ echo "   Email: admin@example.com"
 echo "   Mot de passe: password123"
 echo ""
 echo "📋 Pour arrêter les serveurs:"
-echo "   kill $BACKEND_PID $FRONTEND_PID"
+echo "   kill $BACKEND_PID $FRONTEND_PID $QUEUE_PID"
 echo "   ou: killall php node"
 echo ""
 echo "📝 Logs:"
 echo "   Backend:  tail -f /tmp/backend.log"
 echo "   Frontend: tail -f /tmp/frontend.log"
+echo "   Queue:    tail -f /tmp/queue.log"

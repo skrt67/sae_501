@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Auth\Events\Registered;
 
 class AuthController extends Controller
 {
@@ -25,18 +26,16 @@ class AuthController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
-        // Créer un workspace automatiquement
-        $workspace = Workspace::create([
-            'name' => "Équipe {$user->name}",
-            'owner_id' => $user->id,
-        ]);
-
-        // Ajouter l'utilisateur comme owner du workspace
-        $workspace->users()->attach($user->id, ['role' => 'owner']);
+        // Déclencher l'événement d'inscription qui enverra l'email de vérification
+        event(new Registered($user));
 
         $token = $user->createToken('auth')->plainTextToken;
 
-        return response()->json(['user' => $user, 'token' => $token], 201);
+        return response()->json([
+            'user' => $user,
+            'token' => $token,
+            'message' => 'Compte créé. Veuillez vérifier votre email.'
+        ], 201);
     }
 
     public function login(Request $request)

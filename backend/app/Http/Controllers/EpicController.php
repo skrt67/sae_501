@@ -16,6 +16,7 @@ class EpicController extends Controller
         
         // Retourner uniquement les epics des projets dont l'utilisateur est membre
         return Epic::with('project')
+            ->withCount('tasks')
             ->whereHas('project.users', function($query) use ($user) {
                 $query->where('users.id', $user->id);
             })
@@ -43,7 +44,7 @@ class EpicController extends Controller
             'color' => ['nullable','string','max:20'],
             'start_date' => ['nullable','date'],
             'end_date' => ['nullable','date','after_or_equal:start_date'],
-            'status' => ['nullable','string','in:planning,in_progress,completed'],
+            'status' => ['nullable','string','in:planned,in_progress,completed,on_hold'],
             'phase' => ['nullable','string','max:255'],
         ]);
         $epic = Epic::create($data);
@@ -62,7 +63,7 @@ class EpicController extends Controller
             return response()->json(['message' => 'Accès non autorisé'], 403);
         }
         
-        return $epic->load('project','tasks');
+        return $epic->loadCount('tasks')->load('project','tasks');
     }
 
     /**
@@ -91,7 +92,7 @@ class EpicController extends Controller
             'color' => ['nullable','string','max:20'],
             'start_date' => ['nullable','date'],
             'end_date' => ['nullable','date','after_or_equal:start_date'],
-            'status' => ['nullable','string','in:planning,in_progress,completed'],
+            'status' => ['nullable','string','in:planned,in_progress,completed,on_hold'],
             'phase' => ['nullable','string','max:255'],
         ]);
         $epic->update($data);

@@ -12,16 +12,6 @@ export interface User {
   role?: string
 }
 
-export interface Workspace {
-  id: number
-  name: string
-  description?: string
-  created_at?: string
-  updated_at?: string
-  owner_id?: number
-  settings?: Record<string, any>
-}
-
 export interface Notification {
   id: number
   type: 'deadline' | 'assignment' | 'mention' | 'comment' | 'general'
@@ -35,11 +25,15 @@ export interface Notification {
 
 export interface Invitation {
   id: number
-  workspace_id: number
-  workspace_name: string
+  project_id: number
+  project?: {
+    id: number
+    name: string
+  }
+  project_name?: string
   email: string
-  role: 'admin' | 'member' | 'viewer'
-  status: 'pending' | 'accepted' | 'declined'
+  role: 'owner' | 'member'
+  status: 'pending' | 'accepted' | 'rejected'
   token: string
   invited_by: number
   inviter_name: string
@@ -65,8 +59,6 @@ export interface Project {
   name: string
   description?: string
   status?: 'active' | 'archived' | 'completed'
-  workspace_id?: number
-  owner_id?: number
   start_date?: string
   end_date?: string
   created_at?: string

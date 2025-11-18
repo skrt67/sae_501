@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Epic extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\LogsActivity;
 
     protected $fillable = [
         'project_id', 'name', 'description', 'color', 'start_date', 'end_date', 'status', 'phase'

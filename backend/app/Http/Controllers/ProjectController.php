@@ -14,18 +14,10 @@ class ProjectController extends Controller
     {
         $user = $request->user();
 
-        // Retourner les projets dont l'utilisateur est membre directement
-        // OU les projets des workspaces dont l'utilisateur est membre
-        return Project::with(['users', 'sprints', 'workspace'])
-            ->where(function($query) use ($user) {
-                // Projets dont l'utilisateur est membre direct
-                $query->whereHas('users', function($q) use ($user) {
-                    $q->where('users.id', $user->id);
-                })
-                // OU projets des workspaces dont l'utilisateur est membre
-                ->orWhereHas('workspace.users', function($q) use ($user) {
-                    $q->where('users.id', $user->id);
-                });
+        // Retourner UNIQUEMENT les projets dont l'utilisateur est membre direct
+        return Project::with(['users', 'sprints'])
+            ->whereHas('users', function($q) use ($user) {
+                $q->where('users.id', $user->id);
             })
             ->latest()
             ->paginate(20);
@@ -47,27 +39,14 @@ class ProjectController extends Controller
         $data = $request->validate([
             'name' => ['required','string','max:255'],
             'description' => ['nullable','string'],
-            'workspace_id' => ['required','exists:workspaces,id'],
         ]);
-
-        // Vérifier que l'utilisateur est membre du workspace
-        $workspace = \App\Models\Workspace::findOrFail($data['workspace_id']);
-        if (!$workspace->isMember($request->user()->id) && !$workspace->isOwner($request->user()->id)) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
 
         $project = Project::create($data);
 
         // Ajouter l'utilisateur créateur comme owner du projet
         $project->users()->attach($request->user()->id, ['role' => 'owner']);
 
-        // Ajouter automatiquement tous les membres du workspace au projet
-        $workspaceMembers = $workspace->users()->where('users.id', '!=', $request->user()->id)->get();
-        foreach ($workspaceMembers as $member) {
-            $project->users()->attach($member->id, ['role' => 'member']);
-        }
-
-        return response()->json($project->load('users', 'workspace'), 201);
+        return response()->json($project->load('users'), 201);
     }
 
     /**
@@ -77,15 +56,12 @@ class ProjectController extends Controller
     {
         $user = $request->user();
 
-        // Vérifier que l'utilisateur a accès au projet
-        $hasAccess = $project->users()->where('users.id', $user->id)->exists()
-            || ($project->workspace && $project->workspace->users()->where('users.id', $user->id)->exists());
-
-        if (!$hasAccess) {
+        // Vérifier que l'utilisateur est membre DIRECT du projet
+        if (!$project->users()->where('users.id', $user->id)->exists()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        return $project->load('users', 'workspace', 'sprints', 'epics', 'tasks');
+        return $project->load('users', 'sprints', 'epics', 'tasks');
     }
 
     /**
@@ -103,11 +79,8 @@ class ProjectController extends Controller
     {
         $user = $request->user();
 
-        // Vérifier que l'utilisateur a accès au projet (membre direct ou via workspace)
-        $hasAccess = $project->users()->where('users.id', $user->id)->exists()
-            || ($project->workspace && $project->workspace->users()->where('users.id', $user->id)->exists());
-
-        if (!$hasAccess) {
+        // Vérifier que l'utilisateur est membre DIRECT du projet
+        if (!$project->users()->where('users.id', $user->id)->exists()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -116,7 +89,7 @@ class ProjectController extends Controller
             'description' => ['nullable','string'],
         ]);
         $project->update($data);
-        return $project->load('users', 'workspace');
+        return $project->load('users');
     }
 
     /**
@@ -126,16 +99,14 @@ class ProjectController extends Controller
     {
         $user = $request->user();
 
-        // Seul un owner du projet ou du workspace peut supprimer
+        // Seul un owner du projet peut supprimer
         $isProjectOwner = $project->users()
             ->where('users.id', $user->id)
             ->wherePivot('role', 'owner')
             ->exists();
 
-        $isWorkspaceOwner = $project->workspace && $project->workspace->isOwner($user->id);
-
-        if (!$isProjectOwner && !$isWorkspaceOwner) {
-            return response()->json(['message' => 'Unauthorized. Only project or workspace owners can delete projects.'], 403);
+        if (!$isProjectOwner) {
+            return response()->json(['message' => 'Unauthorized. Only project owners can delete projects.'], 403);
         }
 
         $project->delete();

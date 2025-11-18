@@ -49,7 +49,7 @@ export default function ProjectMembersModal({
         setMembers(Array.isArray(data) ? data : (data.data || []))
       }
     } catch (e) {
-      console.error('Erreur chargement membres:', e)
+      // Erreur silencieuse
     }
   }
 
@@ -63,7 +63,7 @@ export default function ProjectMembersModal({
         setAvailableUsers(Array.isArray(data) ? data : (data.data || []))
       }
     } catch (e) {
-      console.error('Erreur chargement utilisateurs:', e)
+      // Erreur silencieuse
     }
   }
 

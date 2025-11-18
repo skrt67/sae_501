@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Form, Input, Button, message } from 'antd'
 import { useAuth } from '../auth/AuthContext'
-import { User, Mail, Lock, Camera, Save } from 'lucide-react'
+import { User, Mail, Lock, Save } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 export default function ProfileModern() {
@@ -11,7 +11,6 @@ export default function ProfileModern() {
   const [passwordForm] = Form.useForm()
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
-  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (!token) {
@@ -70,147 +69,46 @@ export default function ProfileModern() {
     }
   }
 
-  const handleAvatarChange = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    
-    // Vérifier que c'est une image
-    if (!file.type.startsWith('image/')) {
-      message.error('Veuillez sélectionner une image')
-      return
-    }
-    
-    const formData = new FormData()
-    formData.append('avatar', file)
-    setUploading(true)
-    
-    try {
-      const resp = await fetch('/api/user/avatar', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      })
-      
-      if (!resp.ok) {
-        const errorData = await resp.text()
-        console.error('Erreur upload:', errorData)
-        throw new Error('Upload échoué')
-      }
-      
-      const data = await resp.json()
-      console.log('Réponse upload:', data)
-      
-      message.success('Photo mise à jour')
-      
-      // Attendre un peu puis recharger
-      setTimeout(async () => {
-        await refreshUser()
-        console.log('User après refresh:', user)
-      }, 500)
-      
-    } catch (error) {
-      console.error('Erreur:', error)
-      message.error('Erreur lors de l\'upload')
-    } finally {
-      setUploading(false)
-      // Reset input
-      e.target.value = ''
-    }
-  }
-
   if (!token) return null
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-page)', padding: '32px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: '700', color: 'var(--text)', margin: '0 0 8px 0' }}>
-          Mon Profil
-        </h1>
-        <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-          Gérez vos informations personnelles et votre sécurité
-        </p>
-      </div>
+    <div style={{ minHeight: '100vh', background: '#f8f9fa', padding: '60px 40px' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ marginBottom: '48px' }}>
+          <h1 style={{ fontSize: '42px', fontWeight: '600', letterSpacing: '-0.02em', color: '#1a1a1a', margin: '0 0 8px 0' }}>
+            Mon Profil
+          </h1>
+          <p style={{ color: 'rgba(0, 0, 0, 0.65)', margin: 0 }}>
+            Gérez vos informations personnelles et votre sécurité
+          </p>
+        </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
         {/* Profile Card */}
-        <div className="card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '32px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--text)', marginBottom: '24px' }}>
+        <div className="card" style={{ background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.06)', borderRadius: '12px', padding: '32px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1a1a1a', marginBottom: '24px' }}>
             Informations personnelles
           </h2>
 
           {/* Avatar */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '32px' }}>
-            <div style={{ 
-              width: '120px', 
-              height: '120px', 
-              borderRadius: '50%', 
-              background: 'var(--primary)', 
-              display: 'flex', 
-              alignItems: 'center', 
+            <div style={{
+              width: '120px',
+              height: '120px',
+              borderRadius: '50%',
+              background: '#000000',
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               color: 'white',
               fontSize: '48px',
               fontWeight: '700',
               marginBottom: '16px',
-              border: '4px solid var(--border)',
-              position: 'relative',
-              overflow: 'hidden'
+              border: '4px solid rgba(0, 0, 0, 0.06)'
             }}>
-              {user?.avatar_url ? (
-                <img 
-                  src={user.avatar_url.startsWith('http') ? user.avatar_url : `http://localhost:8000${user.avatar_url}?t=${Date.now()}`}
-                  alt="Avatar" 
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'cover' 
-                  }}
-                  onError={(e) => {
-                    console.error('Erreur chargement image:', user.avatar_url)
-                    e.target.style.display = 'none'
-                  }}
-                />
-              ) : (
-                user?.name?.charAt(0).toUpperCase() || 'U'
-              )}
-              
-              <label
-                htmlFor="avatar-upload"
-                style={{
-                  position: 'absolute',
-                  bottom: '0',
-                  right: '0',
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'var(--primary)',
-                  border: '3px solid var(--bg-card)',
-                  cursor: uploading ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  transition: 'all 0.2s',
-                  zIndex: 10
-                }}
-                onMouseEnter={(e) => !uploading && (e.currentTarget.style.transform = 'scale(1.1)')}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              >
-                <Camera size={18} />
-              </label>
-              <input
-                id="avatar-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                disabled={uploading}
-                style={{ display: 'none' }}
-              />
+              {user?.name?.charAt(0).toUpperCase() || 'U'}
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>
-              {uploading ? 'Upload en cours...' : 'Cliquez sur l\'icône pour changer'}
-            </p>
           </div>
 
           {/* Form */}
@@ -220,33 +118,33 @@ export default function ProfileModern() {
               name="name"
               rules={[{ required: true, message: 'Le nom est requis' }]}
             >
-              <Input 
-                prefix={<User size={16} style={{ color: 'var(--text-muted)' }} />}
-                placeholder="Votre nom" 
+              <Input
+                prefix={<User size={16} style={{ color: 'rgba(0, 0, 0, 0.65)' }} />}
+                placeholder="Votre nom"
                 disabled={savingProfile}
-                style={{ height: '44px', borderRadius: 'var(--radius-md)' }}
+                style={{ height: '44px', borderRadius: '8px' }}
               />
             </Form.Item>
-            
+
             <Form.Item label="Email" name="email">
-              <Input 
-                prefix={<Mail size={16} style={{ color: 'var(--text-muted)' }} />}
+              <Input
+                prefix={<Mail size={16} style={{ color: 'rgba(0, 0, 0, 0.65)' }} />}
                 disabled
-                style={{ height: '44px', borderRadius: 'var(--radius-md)' }}
+                style={{ height: '44px', borderRadius: '8px' }}
               />
             </Form.Item>
-            
-            <Button 
-              type="primary" 
-              htmlType="submit" 
+
+            <Button
+              type="primary"
+              htmlType="submit"
               loading={savingProfile}
               icon={<Save size={16} />}
-              style={{ 
+              style={{
                 width: '100%',
-                height: '44px', 
-                borderRadius: 'var(--radius-md)', 
-                background: 'var(--primary)', 
-                borderColor: 'var(--primary)',
+                height: '44px',
+                borderRadius: '8px',
+                background: '#000000',
+                borderColor: '#000000',
                 fontWeight: 500
               }}
             >
@@ -256,8 +154,8 @@ export default function ProfileModern() {
         </div>
 
         {/* Security Card */}
-        <div className="card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '32px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', color: 'var(--text)', marginBottom: '24px' }}>
+        <div className="card" style={{ background: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.06)', borderRadius: '12px', padding: '32px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#1a1a1a', marginBottom: '24px' }}>
             Sécurité
           </h2>
 
@@ -270,14 +168,14 @@ export default function ProfileModern() {
                 { min: 8, message: 'Au moins 8 caractères' }
               ]}
             >
-              <Input.Password 
-                prefix={<Lock size={16} style={{ color: 'var(--text-muted)' }} />}
-                placeholder="••••••••" 
+              <Input.Password
+                prefix={<Lock size={16} style={{ color: 'rgba(0, 0, 0, 0.65)' }} />}
+                placeholder="••••••••"
                 disabled={savingPassword}
-                style={{ height: '44px', borderRadius: 'var(--radius-md)' }}
+                style={{ height: '44px', borderRadius: '8px' }}
               />
             </Form.Item>
-            
+
             <Form.Item
               label="Confirmer le mot de passe"
               name="password_confirmation"
@@ -294,25 +192,25 @@ export default function ProfileModern() {
                 }),
               ]}
             >
-              <Input.Password 
-                prefix={<Lock size={16} style={{ color: 'var(--text-muted)' }} />}
-                placeholder="••••••••" 
+              <Input.Password
+                prefix={<Lock size={16} style={{ color: 'rgba(0, 0, 0, 0.65)' }} />}
+                placeholder="••••••••"
                 disabled={savingPassword}
-                style={{ height: '44px', borderRadius: 'var(--radius-md)' }}
+                style={{ height: '44px', borderRadius: '8px' }}
               />
             </Form.Item>
-            
-            <Button 
-              type="primary" 
-              htmlType="submit" 
+
+            <Button
+              type="primary"
+              htmlType="submit"
               loading={savingPassword}
               icon={<Save size={16} />}
-              style={{ 
+              style={{
                 width: '100%',
-                height: '44px', 
-                borderRadius: 'var(--radius-md)', 
-                background: 'var(--primary)', 
-                borderColor: 'var(--primary)',
+                height: '44px',
+                borderRadius: '8px',
+                background: '#000000',
+                borderColor: '#000000',
                 fontWeight: 500
               }}
             >
@@ -320,6 +218,7 @@ export default function ProfileModern() {
             </Button>
           </Form>
         </div>
+      </div>
       </div>
     </div>
   )

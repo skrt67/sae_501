@@ -4,12 +4,11 @@ import { User } from '../../types'
 interface AuthContextType {
   token: string | null
   user: User | null
-  theme: string
   login: (email: string, password: string, remember?: boolean) => Promise<void>
   register: (name: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
-  toggleTheme: () => void
   refreshUser: () => Promise<void>
+  resendVerificationEmail: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -21,15 +20,10 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token') || sessionStorage.getItem('token'))
   const [user, setUser] = useState<User | null>(null)
-  const [theme, setTheme] = useState<string>(() => {
-    const saved = localStorage.getItem('theme')
-    return saved || 'light'
-  })
 
   useEffect(() => {
-    document.documentElement.className = `theme-${theme}`
-    localStorage.setItem('theme', theme)
-  }, [theme])
+    document.documentElement.className = 'theme-light'
+  }, [])
 
   useEffect(() => {
     if (token) {
@@ -107,10 +101,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (_) {}
   }
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light')
-  }
-
   const refreshUser = async (): Promise<void> => {
     if (token) {
       try {
@@ -120,8 +110,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(userData)
         }
       } catch (error) {
-        console.error('Erreur refresh user:', error)
+        // Erreur silencieuse
       }
+    }
+  }
+
+  const resendVerificationEmail = async (): Promise<void> => {
+    if (!token) throw new Error('Non authentifié')
+    const r = await fetch('/api/email/verification-notification', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+    })
+    if (!r.ok) {
+      const error = await r.json().catch(() => ({ message: 'Erreur lors de l\'envoi de l\'email' }))
+      throw new Error(error.message || 'Erreur lors de l\'envoi de l\'email')
     }
   }
 
@@ -129,12 +131,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     <AuthContext.Provider value={{
       token,
       user,
-      theme,
       login,
       register,
       logout,
-      toggleTheme,
-      refreshUser
+      refreshUser,
+      resendVerificationEmail
     }}>
       {children}
     </AuthContext.Provider>

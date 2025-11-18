@@ -13,10 +13,24 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        
-        // Pour l'instant, on retourne un tableau vide
-        // Vous pourrez implémenter la table notifications plus tard
-        return response()->json([]);
+
+        $notifications = $user->notifications()
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get()
+            ->map(function ($notification) {
+                return [
+                    'id' => $notification->id,
+                    'type' => $notification->data['type'] ?? 'general',
+                    'title' => $notification->data['title'] ?? 'Notification',
+                    'message' => $notification->data['message'] ?? '',
+                    'read_at' => $notification->read_at,
+                    'created_at' => $notification->created_at,
+                    'data' => $notification->data,
+                ];
+            });
+
+        return response()->json($notifications);
     }
 
     /**
@@ -24,6 +38,16 @@ class NotificationController extends Controller
      */
     public function markAsRead(Request $request, $id)
     {
+        $user = $request->user();
+
+        $notification = $user->notifications()->find($id);
+
+        if (!$notification) {
+            return response()->json(['message' => 'Notification non trouvée'], 404);
+        }
+
+        $notification->markAsRead();
+
         return response()->json(['success' => true]);
     }
 
@@ -32,6 +56,10 @@ class NotificationController extends Controller
      */
     public function markAllAsRead(Request $request)
     {
+        $user = $request->user();
+
+        $user->unreadNotifications->markAsRead();
+
         return response()->json(['success' => true]);
     }
 
@@ -40,6 +68,16 @@ class NotificationController extends Controller
      */
     public function destroy(Request $request, $id)
     {
+        $user = $request->user();
+
+        $notification = $user->notifications()->find($id);
+
+        if (!$notification) {
+            return response()->json(['message' => 'Notification non trouvée'], 404);
+        }
+
+        $notification->delete();
+
         return response()->json(['success' => true]);
     }
 }

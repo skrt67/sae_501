@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Sprint extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\LogsActivity;
 
     protected $fillable = [
         'project_id', 'name', 'phase', 'goal', 'starts_at', 'ends_at', 'is_active'

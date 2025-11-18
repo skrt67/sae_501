@@ -1,92 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { Select, Spin, Button, Tooltip, Modal, Form, Input, DatePicker, message } from 'antd'
-import { Calendar, Target, CheckCircle, Zap, TrendingUp, Clock, Plus } from 'lucide-react'
+import { useProjects, useEpics, useSprints, useTasks } from '../../hooks'
+import { Select, Button, Modal, Form, Input, DatePicker, message, Tooltip } from 'antd'
+import { Calendar, Target, Zap, Plus, X } from 'lucide-react'
 import dayjs from 'dayjs'
-import './RoadmapTimeline-light.css'
-
-interface Epic {
-  id: number
-  name: string
-  description: string
-  start_date: string
-  end_date: string
-  status: 'planned' | 'in_progress' | 'completed' | 'on_hold'
-  project_id: number
-  phase?: 'plan' | 'develop' | 'test' | 'launch'
-}
-
-interface Project {
-  id: number
-  name: string
-}
-
-interface Sprint {
-  id: number
-  name: string
-  phase?: string
-  goal?: string
-  starts_at: string
-  ends_at: string
-  project_id: number
-  is_active: boolean
-}
 
 export default function RoadmapTimelineDuna() {
   const { token } = useAuth()
-  const [projects, setProjects] = useState<Project[]>([])
-  const [epics, setEpics] = useState<Epic[]>([])
-  const [sprints, setSprints] = useState<Sprint[]>([])
+  const { projects } = useProjects()
+  const { epics } = useEpics()
+  const { sprints, refetch: refetchSprints } = useSprints()
+  const { tasks } = useTasks()
+  
   const [selectedProject, setSelectedProject] = useState<number | null>(null)
-  const [selectedPhase, setSelectedPhase] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [year] = useState(new Date().getFullYear())
   const [showSprintModal, setShowSprintModal] = useState(false)
+  const [selectedEpic, setSelectedEpic] = useState<any>(null)
+  const [selectedSprint, setSelectedSprint] = useState<any>(null)
   const [form] = Form.useForm()
-
-  useEffect(() => {
-    if (token) {
-      loadData()
-    }
-  }, [token])
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const projectResp = await fetch('/api/projects', {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
-      })
-      if (projectResp.ok) {
-        const projectData = await projectResp.json()
-        const projectsArray = Array.isArray(projectData) ? projectData : projectData.data || []
-        setProjects(projectsArray)
-        if (projectsArray.length > 0) {
-          setSelectedProject(projectsArray[0].id)
-        }
-      }
-
-      const epicResp = await fetch('/api/epics', {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
-      })
-      if (epicResp.ok) {
-        const epicData = await epicResp.json()
-        const epicsArray = Array.isArray(epicData) ? epicData : epicData.data || []
-        setEpics(epicsArray)
-      }
-
-      const sprintResp = await fetch('/api/sprints', {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
-      })
-      if (sprintResp.ok) {
-        const sprintData = await sprintResp.json()
-        const sprintsArray = Array.isArray(sprintData) ? sprintData : sprintData.data || []
-        setSprints(sprintsArray)
-      }
-    } catch (error) {
-      console.error('Erreur chargement roadmap:', error)
-    } finally {
-      setLoading(false)
-    }
+  
+  // Sélectionner automatiquement le premier projet
+  if (projects.length > 0 && !selectedProject) {
+    setSelectedProject(projects[0].id)
   }
 
   const handleCreateSprint = async (values: any) => {
@@ -125,68 +59,14 @@ export default function RoadmapTimelineDuna() {
         message.success('Sprint créé avec succès !')
         setShowSprintModal(false)
         form.resetFields()
-        loadData()
+        refetchSprints()
       } else {
         const error = await resp.json()
-        console.error('Erreur API:', error)
         message.error(error.message || 'Erreur lors de la création du sprint')
       }
     } catch (error) {
-      console.error('Erreur création sprint:', error)
       message.error('Erreur lors de la création du sprint')
     }
-  }
-
-  const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
-  
-  const phases = [
-    { id: 'plan', label: 'Planning', color: '#0066FF' },
-    { id: 'develop', label: 'Développement', color: '#f093fb' },
-    { id: 'test', label: 'Tests', color: '#00D9C0' },
-    { id: 'launch', label: 'Lancement', color: '#43e97b' }
-  ]
-
-  const getPhaseColors = (phase?: string) => {
-    if (!phase) return { bg: 'rgba(0, 0, 0, 0.04)', border: '#d9d9d9' }
-    
-    const phaseLower = phase.toLowerCase().trim()
-    
-    const phaseMap: Record<string, { bg: string; border: string }> = {
-      'planning': { bg: 'rgba(250, 173, 20, 0.15)', border: '#faad14' },
-      'développement': { bg: 'rgba(24, 144, 255, 0.15)', border: '#1890ff' },
-      'developpement': { bg: 'rgba(24, 144, 255, 0.15)', border: '#1890ff' },
-      'test': { bg: 'rgba(114, 46, 209, 0.15)', border: '#722ed1' },
-      'lancement': { bg: 'rgba(82, 196, 26, 0.15)', border: '#52c41a' }
-    }
-    
-    return phaseMap[phaseLower] || { bg: 'rgba(0, 0, 0, 0.04)', border: '#d9d9d9' }
-  }
-
-  let filteredEpics = selectedProject 
-    ? epics.filter(e => e.project_id === selectedProject)
-    : epics
-
-  if (selectedPhase) {
-    filteredEpics = filteredEpics.filter(e => e.phase === selectedPhase)
-  }
-
-  const getMonthPosition = (date: string) => {
-    if (!date) return 0
-    const d = new Date(date)
-    if (isNaN(d.getTime())) return 0
-    const month = d.getMonth()
-    return (month / 12) * 100
-  }
-
-  const getSprintWidth = (startDate: string, endDate: string) => {
-    if (!startDate || !endDate) return 5
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 5
-    const startMonth = start.getMonth()
-    const endMonth = end.getMonth()
-    const duration = Math.max(1, endMonth - startMonth + 1)
-    return Math.max(5, (duration / 12) * 100)
   }
 
   const deleteSprint = async (sprintId: number, e: React.MouseEvent) => {
@@ -201,7 +81,7 @@ export default function RoadmapTimelineDuna() {
       
       if (resp.ok) {
         message.success('Sprint supprimé')
-        loadData()
+        refetchSprints()
       } else {
         message.error('Erreur lors de la suppression')
       }
@@ -210,21 +90,98 @@ export default function RoadmapTimelineDuna() {
     }
   }
 
-  const totalEpics = filteredEpics.length
-  const completedEpics = filteredEpics.filter(e => e.status === 'completed').length
-  const inProgressEpics = filteredEpics.filter(e => e.status === 'in_progress').length
-  const completionRate = totalEpics > 0 ? Math.round((completedEpics / totalEpics) * 100) : 0
-
-  const currentMonth = new Date().getMonth()
-  const currentProgress = ((currentMonth + 1) / 12) * 100
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <Spin size="large" />
-      </div>
-    )
+  const deleteEpic = async (epicId: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!window.confirm('Supprimer cet epic ? Les tâches associées ne seront pas supprimées.')) return
+    
+    try {
+      const resp = await fetch(`/api/epics/${epicId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      
+      if (resp.ok) {
+        message.success('Epic supprimé')
+        window.location.reload() // Recharger pour mettre à jour
+      } else {
+        message.error('Erreur lors de la suppression')
+      }
+    } catch (error) {
+      message.error('Erreur lors de la suppression')
+    }
   }
+
+  // Filtrer les données du projet sélectionné
+  const projectSprints = selectedProject 
+    ? sprints.filter(s => s.project_id === selectedProject).sort((a, b) => 
+        new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+      )
+    : []
+
+  const projectEpics = selectedProject 
+    ? epics.filter(e => e.project_id === selectedProject)
+    : []
+
+  const projectTasks = selectedProject 
+    ? tasks.filter(t => t.project_id === selectedProject)
+    : []
+
+  // Calculer la position et la largeur d'un epic sur la timeline
+  const getEpicPosition = (epicId: number) => {
+    const epicTasks = projectTasks.filter(t => t.epic_id === epicId && t.sprint_id)
+    if (epicTasks.length === 0) return null
+
+    const sprintIds = [...new Set(epicTasks.map(t => t.sprint_id))]
+    const epicSprints = projectSprints.filter(s => sprintIds.includes(s.id))
+    if (epicSprints.length === 0) return null
+
+    const sortedEpicSprints = epicSprints.sort((a, b) => 
+      new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+    )
+
+    const firstSprintIndex = projectSprints.findIndex(s => s.id === sortedEpicSprints[0].id)
+    const lastSprintIndex = projectSprints.findIndex(s => s.id === sortedEpicSprints[sortedEpicSprints.length - 1].id)
+
+    if (firstSprintIndex === -1 || lastSprintIndex === -1) return null
+
+    return {
+      startIndex: firstSprintIndex,
+      spanCount: lastSprintIndex - firstSprintIndex + 1,
+      sprints: sortedEpicSprints,
+      taskCount: epicTasks.length,
+      completedCount: epicTasks.filter(t => t.status === 'done').length
+    }
+  }
+
+  const sprintWidth = 280
+  const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
+  const currentYear = new Date().getFullYear()
+
+  // Calculer la plage de mois couverte par les sprints
+  const getMonthRange = () => {
+    if (projectSprints.length === 0) return []
+    
+    const allDates = projectSprints.flatMap(s => [new Date(s.starts_at), new Date(s.ends_at)])
+    const minDate = new Date(Math.min(...allDates.map(d => d.getTime())))
+    const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())))
+    
+    const monthsRange = []
+    const current = new Date(minDate.getFullYear(), minDate.getMonth(), 1)
+    
+    while (current <= maxDate) {
+      monthsRange.push({
+        month: current.getMonth(),
+        year: current.getFullYear(),
+        label: `${months[current.getMonth()]} ${current.getFullYear()}`
+      })
+      current.setMonth(current.getMonth() + 1)
+    }
+    
+    return monthsRange
+  }
+
+  const monthRange = getMonthRange()
+  const monthWidth = 150
 
   return (
     <div style={{ 
@@ -232,9 +189,9 @@ export default function RoadmapTimelineDuna() {
       background: '#f8f9fa', 
       padding: '60px 40px' 
     }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1800px', margin: '0 auto' }}>
         {/* Header */}
-        <header style={{ marginBottom: '48px', textAlign: 'center' }}>
+        <header style={{ marginBottom: '48px' }}>
           <div style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -243,7 +200,7 @@ export default function RoadmapTimelineDuna() {
             flexWrap: 'wrap',
             marginBottom: '24px'
           }}>
-            <div style={{ flex: 1, textAlign: 'left' }}>
+            <div style={{ flex: 1 }}>
               <h1 style={{ 
                 fontSize: '42px', 
                 fontWeight: 600, 
@@ -260,7 +217,7 @@ export default function RoadmapTimelineDuna() {
                 margin: 0,
                 lineHeight: 1.5
               }}>
-                Planification et suivi des epics tout au long de l'année
+                Vue temporelle des epics et sprints du projet
               </p>
             </div>
             
@@ -273,21 +230,23 @@ export default function RoadmapTimelineDuna() {
                 size="large"
                 options={projects.map(p => ({ value: p.id, label: p.name }))}
               />
-              <Button 
+              <Button
                 type="primary"
                 size="large"
                 icon={<Plus size={20} />}
                 onClick={() => setShowSprintModal(true)}
                 disabled={!selectedProject}
-                style={{ 
-                  background: '#52c41a', 
-                  borderColor: '#52c41a',
+                style={{
+                  background: '#000000',
+                  borderColor: '#000000',
                   borderRadius: '8px',
-                  height: '40px',
+                  height: '44px',
+                  padding: '0 24px',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  fontWeight: 500
+                  fontWeight: 500,
+                  fontSize: '15px'
                 }}
               >
                 Créer un sprint
@@ -296,155 +255,8 @@ export default function RoadmapTimelineDuna() {
           </div>
         </header>
 
-        {/* Sprints Section */}
-        {selectedProject && sprints.filter(s => s.project_id === selectedProject).length > 0 && (
-          <div style={{ marginBottom: '48px' }}>
-            <h2 style={{ 
-              fontSize: '24px', 
-              fontWeight: 600, 
-              color: '#1a1a1a', 
-              marginBottom: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <Zap size={24} style={{ color: '#52c41a' }} />
-              Sprints actifs
-            </h2>
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px'
-            }}>
-              {sprints
-                .filter(s => s.project_id === selectedProject)
-                .map(sprint => (
-                  <div 
-                    key={sprint.id}
-                    style={{ 
-                      background: sprint.is_active ? '#f6ffed' : '#ffffff',
-                      border: sprint.is_active ? '2px solid #52c41a' : '1px solid rgba(0, 0, 0, 0.06)',
-                      borderRadius: '12px',
-                      padding: '20px',
-                      transition: 'all 0.3s ease',
-                      position: 'relative'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-4px)'
-                      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)'
-                      e.currentTarget.style.boxShadow = 'none'
-                    }}
-                  >
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'flex-start',
-                      marginBottom: '12px',
-                      gap: '12px'
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ 
-                          fontSize: '18px', 
-                          fontWeight: 600, 
-                          color: '#1a1a1a',
-                          margin: '0 0 8px 0'
-                        }}>
-                          {sprint.name}
-                        </h3>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          {sprint.phase && (
-                            <span style={{
-                              background: getPhaseColors(sprint.phase).bg,
-                              color: getPhaseColors(sprint.phase).border,
-                              padding: '4px 12px',
-                              borderRadius: '12px',
-                              fontSize: '12px',
-                              fontWeight: 500,
-                              border: `1px solid ${getPhaseColors(sprint.phase).border}`
-                            }}>
-                              {sprint.phase.charAt(0).toUpperCase() + sprint.phase.slice(1)}
-                            </span>
-                          )}
-                          {sprint.is_active && (
-                            <span style={{
-                              background: '#52c41a',
-                              color: '#fff',
-                              padding: '4px 12px',
-                              borderRadius: '12px',
-                              fontSize: '12px',
-                              fontWeight: 500
-                            }}>
-                              ACTIF
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => deleteSprint(sprint.id, e)}
-                        style={{
-                          border: 'none',
-                          background: 'rgba(255, 77, 79, 0.1)',
-                          color: '#ff4d4f',
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'all 0.2s',
-                          fontSize: '18px',
-                          fontWeight: 'bold'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#ff4d4f'
-                          e.currentTarget.style.color = '#fff'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgba(255, 77, 79, 0.1)'
-                          e.currentTarget.style.color = '#ff4d4f'
-                        }}
-                        title="Supprimer le sprint"
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '8px',
-                      color: 'rgba(0, 0, 0, 0.65)',
-                      fontSize: '14px',
-                      marginBottom: '8px'
-                    }}>
-                      <Calendar size={16} />
-                      <span>
-                        {dayjs(sprint.starts_at).format('DD/MM/YYYY')} - {dayjs(sprint.ends_at).format('DD/MM/YYYY')}
-                      </span>
-                    </div>
-                    {sprint.goal && (
-                      <p style={{ 
-                        margin: '12px 0 0 0',
-                        fontSize: '14px',
-                        color: 'rgba(0, 0, 0, 0.65)',
-                        lineHeight: 1.6
-                        }}>
-                        {sprint.goal}
-                      </p>
-                    )}
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
-
-        
-
-        {/* Timeline Section */}
-        {selectedProject && sprints.filter(s => s.project_id === selectedProject).length === 0 ? (
+        {/* Contenu principal */}
+        {!selectedProject ? (
           <div style={{ 
             background: '#ffffff',
             border: '1px solid rgba(0, 0, 0, 0.06)',
@@ -453,43 +265,50 @@ export default function RoadmapTimelineDuna() {
             textAlign: 'center',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
           }}>
-            <div style={{ 
-              fontSize: '64px',
-              marginBottom: '24px',
-              opacity: 0.3,
-              color: '#52c41a'
-            }}>
-              <Zap size={64} />
-            </div>
-            <h2 style={{ 
-              fontSize: '28px',
-              fontWeight: 600,
-              color: '#1a1a1a',
-              margin: '0 0 12px 0'
-            }}>
-              Aucun Sprint Trouvé
+            <Calendar size={64} style={{ color: 'rgba(0, 0, 0, 0.25)', marginBottom: '24px' }} />
+            <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 12px 0' }}>
+              Sélectionnez un projet
+            </h2>
+            <p style={{ fontSize: '16px', color: 'rgba(0, 0, 0, 0.45)', margin: 0 }}>
+              Choisissez un projet pour visualiser sa roadmap
+            </p>
+          </div>
+        ) : projectSprints.length === 0 ? (
+          <div style={{ 
+            background: '#ffffff',
+            border: '1px solid rgba(0, 0, 0, 0.06)',
+            borderRadius: '12px',
+            padding: '80px 40px',
+            textAlign: 'center',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+          }}>
+            <Zap size={64} style={{ color: 'rgba(82, 196, 26, 0.3)', marginBottom: '24px' }} />
+            <h2 style={{ fontSize: '28px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 12px 0' }}>
+              Aucun Sprint
             </h2>
             <p style={{ 
-              fontSize: '16px',
-              color: 'rgba(0, 0, 0, 0.45)',
+              fontSize: '16px', 
+              color: 'rgba(0, 0, 0, 0.45)', 
               margin: '0 0 32px 0',
               maxWidth: '500px',
               marginLeft: 'auto',
               marginRight: 'auto'
             }}>
-              Créez un sprint pour planifier votre travail sur la timeline. Les sprints vous permettent d'organiser vos tâches sur des périodes définies.
+              Créez votre premier sprint pour commencer à planifier votre roadmap
             </p>
-            <Button 
-              type="primary" 
-              size="large" 
+            <Button
+              type="primary"
+              size="large"
+              icon={<Plus size={20} />}
               onClick={() => setShowSprintModal(true)}
               style={{
                 height: '48px',
                 padding: '0 32px',
                 fontSize: '16px',
                 fontWeight: 500,
-                background: '#52c41a',
-                borderColor: '#52c41a'
+                borderRadius: '8px',
+                background: '#000000',
+                borderColor: '#000000'
               }}
             >
               Créer un Sprint
@@ -500,237 +319,426 @@ export default function RoadmapTimelineDuna() {
             background: '#ffffff',
             border: '1px solid rgba(0, 0, 0, 0.06)',
             borderRadius: '12px',
-            padding: '32px',
+            overflow: 'hidden',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
           }}>
-            <h2 style={{ 
-              fontSize: '24px', 
-              fontWeight: 600, 
-              color: '#1a1a1a', 
-              margin: '0 0 24px 0' 
-            }}>
-              Timeline {year}
-            </h2>
-
-            {/* Phase Filters */}
-            <div style={{ 
-              display: 'flex', 
-              gap: '12px', 
-              flexWrap: 'wrap',
-              marginBottom: '32px'
-            }}>
-              <button
-                style={{
-                  padding: '8px 16px',
-                  border: `2px solid ${selectedPhase === null ? '#1890ff' : 'rgba(0, 0, 0, 0.15)'}`,
-                  background: selectedPhase === null ? '#1890ff' : 'transparent',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: selectedPhase === null ? '#ffffff' : 'rgba(0, 0, 0, 0.65)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
-                onClick={() => setSelectedPhase(null)}
-              >
-                Toutes les phases
-              </button>
-              {phases.map(phase => (
-                <button
-                  key={phase.id}
-                  style={{
-                    padding: '8px 16px',
-                    border: `2px solid ${selectedPhase === phase.id ? phase.color : 'rgba(0, 0, 0, 0.15)'}`,
-                    background: selectedPhase === phase.id ? phase.color : 'transparent',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: selectedPhase === phase.id ? '#ffffff' : 'rgba(0, 0, 0, 0.65)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onClick={() => setSelectedPhase(phase.id)}
-                  onMouseEnter={(e) => {
-                    if (selectedPhase !== phase.id) {
-                      e.currentTarget.style.borderColor = phase.color
-                      e.currentTarget.style.color = phase.color
-                      e.currentTarget.style.background = `${phase.color}10`
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (selectedPhase !== phase.id) {
-                      e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.15)'
-                      e.currentTarget.style.color = 'rgba(0, 0, 0, 0.65)'
-                      e.currentTarget.style.background = 'transparent'
-                    }
-                  }}
-                >
-                  {phase.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Timeline Container */}
-            <div style={{ 
-              background: 'rgba(0, 0, 0, 0.02)',
-              borderRadius: '12px',
-              padding: '24px',
-              overflowX: 'auto'
-            }}>
-              {/* Months */}
+            {/* Roadmap Timeline */}
+            <div style={{ padding: '32px' }}>
+              {/* Container avec scroll horizontal */}
               <div style={{ 
-                display: 'grid',
-                gridTemplateColumns: 'repeat(12, 1fr)',
-                gap: '8px',
-                marginBottom: '20px',
-                padding: '0 8px',
-                minWidth: '800px'
+                overflowX: 'auto',
+                overflowY: 'visible',
+                paddingBottom: '20px',
+                marginLeft: '-32px',
+                marginRight: '-32px',
+                paddingLeft: '32px',
+                paddingRight: '32px'
               }}>
-                {months.map((month, idx) => (
-                  <div 
-                    key={idx} 
-                    style={{
-                      textAlign: 'center',
-                      fontSize: '11px',
-                      fontWeight: 500,
+                <div style={{ 
+                  minWidth: `${Math.max(monthRange.length * monthWidth, 1000)}px`,
+                  position: 'relative'
+                }}>
+                  {/* Timeline des mois */}
+                  <div style={{ 
+                    display: 'flex',
+                    marginBottom: '24px',
+                    paddingBottom: '16px',
+                    position: 'relative'
+                  }}>
+                    {monthRange.map((month, index) => (
+                      <div
+                        key={`${month.year}-${month.month}`}
+                        style={{
+                          width: `${monthWidth}px`,
+                          flexShrink: 0,
+                          textAlign: 'center',
+                          padding: '12px 8px',
+                          background: 'rgba(0, 0, 0, 0.02)',
+                          position: 'relative'
+                        }}
+                      >
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: '#1a1a1a',
+                          marginBottom: '4px'
+                        }}>
+                          {months[month.month]}
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: 'rgba(0, 0, 0, 0.45)'
+                        }}>
+                          {month.year}
+                        </div>
+                        {index < monthRange.length - 1 && (
+                          <div style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '1px',
+                            background: 'rgba(0, 0, 0, 0.06)'
+                          }} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Sprints sur la timeline */}
+                  <div style={{ 
+                    position: 'relative',
+                    minHeight: `${Math.max(180, Math.ceil(projectSprints.length / 3) * 60 + 80)}px`,
+                    marginBottom: '32px',
+                    paddingBottom: '32px',
+                    borderBottom: '1px solid rgba(0, 0, 0, 0.06)'
+                  }}>
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
                       color: 'rgba(0, 0, 0, 0.45)',
                       textTransform: 'uppercase',
                       letterSpacing: '0.5px',
-                      padding: '8px 4px',
-                      background: 'rgba(0, 0, 0, 0.03)',
-                      borderRadius: '6px'
-                    }}
-                  >
-                    {month}
-                  </div>
-                ))}
-              </div>
-
-              {/* Sprints */}
-              <div style={{ 
-                position: 'relative',
-                minHeight: '480px',
-                padding: '8px',
-                minWidth: '800px'
-              }}>
-                {selectedProject && sprints
-                  .filter(s => s.project_id === selectedProject)
-                  .map((sprint, idx) => {
-                    if (!sprint.starts_at || !sprint.ends_at) return null
-                    
-                    const left = getMonthPosition(sprint.starts_at)
-                    const width = getSprintWidth(sprint.starts_at, sprint.ends_at)
-                    const top = (idx % 3) * 80
-                    
-                    const colors = getPhaseColors(sprint.phase)
-
-                    return (
-                      <Tooltip
-                        key={sprint.id}
-                        title={
-                          <div>
-                            <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
-                              {sprint.name} {sprint.is_active && '(Actif)'}
-                            </div>
-                            {sprint.phase && (
-                              <div style={{ fontSize: 11, marginBottom: 4, opacity: 0.9 }}>
-                                Phase: {sprint.phase.charAt(0).toUpperCase() + sprint.phase.slice(1)}
-                              </div>
-                            )}
-                            {sprint.goal && (
-                              <div style={{ fontSize: 12, marginBottom: 4 }}>
-                                {sprint.goal}
-                              </div>
-                            )}
-                            <div style={{ fontSize: 11, opacity: 0.8 }}>
-                              {dayjs(sprint.starts_at).format('DD/MM/YYYY')} → {dayjs(sprint.ends_at).format('DD/MM/YYYY')}
-                            </div>
-                          </div>
+                      marginBottom: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <Zap size={16} style={{ color: '#52c41a' }} />
+                      Sprints
+                    </div>
+                    {(() => {
+                      // Calculer les positions pour éviter les chevauchements
+                      const sprintPositions: { [key: number]: { left: number; width: number; row: number } } = {}
+                      const rows: { start: number; end: number }[][] = [[]]
+                      
+                      projectSprints.forEach((sprint, index) => {
+                        const startDate = new Date(sprint.starts_at)
+                        const endDate = new Date(sprint.ends_at)
+                        
+                        const startMonthIndex = monthRange.findIndex(m => 
+                          m.year === startDate.getFullYear() && m.month === startDate.getMonth()
+                        )
+                        const endMonthIndex = monthRange.findIndex(m => 
+                          m.year === endDate.getFullYear() && m.month === endDate.getMonth()
+                        )
+                        
+                        if (startMonthIndex === -1 || endMonthIndex === -1) return
+                        
+                        const leftPosition = startMonthIndex * monthWidth
+                        const width = ((endMonthIndex - startMonthIndex + 1) * monthWidth) - 8
+                        
+                        // Trouver la première ligne disponible sans chevauchement
+                        let rowIndex = 0
+                        let placed = false
+                        
+                        while (!placed) {
+                          if (!rows[rowIndex]) rows[rowIndex] = []
+                          
+                          const hasOverlap = rows[rowIndex].some(existing => 
+                            !(endMonthIndex < existing.start || startMonthIndex > existing.end)
+                          )
+                          
+                          if (!hasOverlap) {
+                            rows[rowIndex].push({ start: startMonthIndex, end: endMonthIndex })
+                            sprintPositions[sprint.id] = { left: leftPosition, width, row: rowIndex }
+                            placed = true
+                          } else {
+                            rowIndex++
+                          }
                         }
-                      >
-                        <div
+                      })
+                      
+                      return projectSprints.map((sprint) => {
+                        const pos = sprintPositions[sprint.id]
+                        if (!pos) return null
+                        
+                        const topPosition = 40 + (pos.row * 60)
+
+                        return (
+                          <div
+                          key={sprint.id}
+                          onClick={() => setSelectedSprint(sprint)}
                           style={{
                             position: 'absolute',
-                            left: `${left}%`,
-                            width: `${width}%`,
-                            top: `${top}px`,
-                            height: '70px',
-                            background: colors.bg,
-                            border: `2px solid ${colors.border}`,
-                            borderLeft: `4px solid ${colors.border}`,
-                            borderRadius: '8px',
+                            left: `${pos.left + 4}px`,
+                            top: `${topPosition}px`,
+                            width: `${pos.width}px`,
+                            minHeight: '56px',
+                            background: 'linear-gradient(135deg, rgba(82, 196, 26, 0.12), rgba(82, 196, 26, 0.05))',
+                            border: '2px solid #52c41a',
+                            borderRadius: '12px',
                             padding: '12px 16px',
                             display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '12px',
                             cursor: 'pointer',
-                            transition: 'all 0.3s ease',
-                            boxShadow: `0 2px 8px ${colors.border}25`
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: '0 4px 12px rgba(82, 196, 26, 0.15)',
+                            backdropFilter: 'blur(8px)',
+                            zIndex: 2
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)'
-                            e.currentTarget.style.boxShadow = `0 4px 16px ${colors.border}40`
+                            e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)'
+                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(82, 196, 26, 0.25)'
                             e.currentTarget.style.zIndex = '10'
+                            e.currentTarget.style.borderWidth = '3px'
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)'
-                            e.currentTarget.style.boxShadow = `0 2px 8px ${colors.border}25`
-                            e.currentTarget.style.zIndex = '1'
+                            e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(82, 196, 26, 0.15)'
+                            e.currentTarget.style.zIndex = '2'
+                            e.currentTarget.style.borderWidth = '2px'
                           }}
                         >
                           <div style={{
-                            fontSize: width < 15 ? '11px' : '14px',
-                            fontWeight: 600,
-                            color: '#1a1a1a',
-                            margin: '0 0 4px 0',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            gap: '10px',
+                            flex: 1,
+                            minWidth: 0
                           }}>
-                            {width < 15 ? sprint.name.substring(0, 10) + (sprint.name.length > 10 ? '...' : '') : sprint.name}
-                            {sprint.phase && width >= 15 && (
-                              <span style={{
-                                fontSize: '9px',
-                                fontWeight: 600,
-                                background: colors.border,
-                                color: '#fff',
-                                padding: '2px 6px',
-                                borderRadius: '3px',
-                                textTransform: 'uppercase'
-                              }}>
-                                {sprint.phase.substring(0, 4)}
-                              </span>
-                            )}
-                          </div>
-                          {width >= 10 && (
+                            <Zap size={16} style={{ color: '#52c41a', flexShrink: 0 }} />
                             <div style={{
-                              fontSize: width < 15 ? '10px' : '12px',
-                              color: 'rgba(0, 0, 0, 0.45)',
-                              margin: 0,
-                              whiteSpace: 'nowrap',
+                              fontSize: '14px',
+                              fontWeight: 700,
+                              color: '#1a1a1a',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              letterSpacing: '-0.01em'
+                            }}>
+                              {sprint.name}
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => deleteSprint(sprint.id, e)}
+                            style={{
+                              border: 'none',
+                              background: 'transparent',
+                              color: 'rgba(0, 0, 0, 0.45)',
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '4px'
-                            }}>
-                              {width >= 15 && <Clock size={10} />}
-                              {width < 15 
-                                ? dayjs(sprint.starts_at).format('DD/MM') 
-                                : `${dayjs(sprint.starts_at).format('DD MMM')} - ${dayjs(sprint.ends_at).format('DD MMM')}`
-                              }
-                            </div>
-                          )}
+                              justifyContent: 'center',
+                              transition: 'all 0.2s',
+                              padding: 0,
+                              marginLeft: '8px',
+                              flexShrink: 0
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(255, 77, 79, 0.1)'
+                              e.currentTarget.style.color = '#ff4d4f'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'transparent'
+                              e.currentTarget.style.color = 'rgba(0, 0, 0, 0.45)'
+                            }}
+                          >
+                            <X size={14} />
+                          </button>
                         </div>
-                      </Tooltip>
-                    )
-                  })}
+                        )
+                      })
+                    })()}
+                  </div>
+
+                  {/* Epics sur la timeline */}
+                  <div style={{ position: 'relative', minHeight: '300px' }}>
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: 'rgba(0, 0, 0, 0.45)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <Target size={16} style={{ color: '#722ed1' }} />
+                      Epics
+                    </div>
+                    
+                    {(() => {
+                      // Calculer les positions des epics pour éviter les chevauchements
+                      const epicPositions: { [key: number]: { left: number; width: number; row: number; position: any } } = {}
+                      const epicRows: { start: number; end: number }[][] = [[]]
+                      
+                      projectEpics.forEach((epic) => {
+                        const position = getEpicPosition(epic.id)
+                        if (!position) return
+
+                        const startDate = new Date(position.sprints[0].starts_at)
+                        const endDate = new Date(position.sprints[position.sprints.length - 1].ends_at)
+                        
+                        const startMonthIndex = monthRange.findIndex(m => 
+                          m.year === startDate.getFullYear() && m.month === startDate.getMonth()
+                        )
+                        const endMonthIndex = monthRange.findIndex(m => 
+                          m.year === endDate.getFullYear() && m.month === endDate.getMonth()
+                        )
+                        
+                        if (startMonthIndex === -1 || endMonthIndex === -1) return
+                        
+                        const leftPosition = startMonthIndex * monthWidth
+                        const width = ((endMonthIndex - startMonthIndex + 1) * monthWidth) - 8
+                        
+                        // Trouver la première ligne disponible sans chevauchement
+                        let rowIndex = 0
+                        let placed = false
+                        
+                        while (!placed) {
+                          if (!epicRows[rowIndex]) epicRows[rowIndex] = []
+                          
+                          const hasOverlap = epicRows[rowIndex].some(existing => 
+                            !(endMonthIndex < existing.start || startMonthIndex > existing.end)
+                          )
+                          
+                          if (!hasOverlap) {
+                            epicRows[rowIndex].push({ start: startMonthIndex, end: endMonthIndex })
+                            epicPositions[epic.id] = { left: leftPosition, width, row: rowIndex, position }
+                            placed = true
+                          } else {
+                            rowIndex++
+                          }
+                        }
+                      })
+                      
+                      return projectEpics.map((epic) => {
+                        const epicPos = epicPositions[epic.id]
+                        if (!epicPos) return null
+                        
+                        const topPosition = 40 + (epicPos.row * 90)
+
+                        return (
+                          <div
+                            key={epic.id}
+                            onClick={() => setSelectedEpic(epic)}
+                            style={{
+                              position: 'absolute',
+                              left: `${epicPos.left + 4}px`,
+                              top: `${topPosition}px`,
+                              width: `${epicPos.width}px`,
+                              minHeight: '68px',
+                              background: `linear-gradient(135deg, ${epic.color || '#722ed1'}08, ${epic.color || '#722ed1'}03)`,
+                              border: `2px solid ${epic.color || '#722ed1'}`,
+                              borderRadius: '12px',
+                              padding: '14px 18px',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              justifyContent: 'space-between',
+                              gap: '12px',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              boxShadow: `0 4px 12px ${epic.color || '#722ed1'}15`,
+                              backdropFilter: 'blur(8px)',
+                              zIndex: 1
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)'
+                              e.currentTarget.style.boxShadow = `0 8px 24px ${epic.color || '#722ed1'}25`
+                              e.currentTarget.style.zIndex = '20'
+                              e.currentTarget.style.borderWidth = '3px'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                              e.currentTarget.style.boxShadow = `0 4px 12px ${epic.color || '#722ed1'}15`
+                              e.currentTarget.style.zIndex = '1'
+                              e.currentTarget.style.borderWidth = '2px'
+                            }}
+                          >
+                            <div style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '10px',
+                              flex: 1,
+                              minWidth: 0
+                            }}>
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px'
+                              }}>
+                                <div style={{
+                                  width: '12px',
+                                  height: '12px',
+                                  borderRadius: '50%',
+                                  background: epic.color || '#722ed1',
+                                  flexShrink: 0,
+                                  boxShadow: `0 0 0 3px ${epic.color || '#722ed1'}20`
+                                }} />
+                                <div style={{
+                                  fontSize: '15px',
+                                  fontWeight: 700,
+                                  color: '#1a1a1a',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  flex: 1,
+                                  letterSpacing: '-0.01em'
+                                }}>
+                                  {epic.name}
+                                </div>
+                              </div>
+                              <div style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '5px 12px',
+                                borderRadius: '8px',
+                                background: epic.color || '#722ed1',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                color: '#ffffff',
+                                alignSelf: 'flex-start',
+                                boxShadow: `0 2px 8px ${epic.color || '#722ed1'}30`
+                              }}>
+                                <span>{epicPos.position.taskCount}</span>
+                                <span style={{ opacity: 0.9 }}>tâche{epicPos.position.taskCount > 1 ? 's' : ''}</span>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', paddingTop: '4px' }}>
+                              <button
+                                onClick={(e) => deleteEpic(epic.id, e)}
+                                style={{
+                                  border: 'none',
+                                  background: 'transparent',
+                                  color: 'rgba(0, 0, 0, 0.45)',
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.2s',
+                                  padding: 0
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = 'rgba(255, 77, 79, 0.1)'
+                                  e.currentTarget.style.color = '#ff4d4f'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent'
+                                  e.currentTarget.style.color = 'rgba(0, 0, 0, 0.45)'
+                                }}
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })
+                    })()}
+                  </div>
+                </div>
               </div>
             </div>
-
           </div>
         )}
       </div>
@@ -816,13 +824,15 @@ export default function RoadmapTimelineDuna() {
               >
                 Annuler
               </Button>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 htmlType="submit"
                 size="large"
                 style={{
-                  background: '#52c41a',
-                  borderColor: '#52c41a'
+                  background: '#000000',
+                  borderColor: '#000000',
+                  borderRadius: '8px',
+                  height: '40px'
                 }}
               >
                 Créer le sprint
@@ -831,6 +841,307 @@ export default function RoadmapTimelineDuna() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Modal Détails Epic */}
+      {selectedEpic && (
+        <Modal
+          open={true}
+          onCancel={() => setSelectedEpic(null)}
+          footer={null}
+          width={700}
+        >
+          <div style={{ padding: '8px 0' }}>
+            {/* Header */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '50%',
+                  background: selectedEpic.color || '#722ed1',
+                  boxShadow: `0 0 0 4px ${selectedEpic.color || '#722ed1'}20`
+                }} />
+                <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+                  {selectedEpic.name}
+                </h2>
+              </div>
+              {selectedEpic.description && (
+                <p style={{ fontSize: '15px', color: 'rgba(0, 0, 0, 0.65)', margin: 0, lineHeight: 1.6 }}>
+                  {selectedEpic.description}
+                </p>
+              )}
+            </div>
+
+            {/* Tâches de l'epic */}
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#1a1a1a', marginBottom: '16px' }}>
+                Tâches associées ({projectTasks.filter(t => t.epic_id === selectedEpic.id).length})
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
+                {projectTasks.filter(t => t.epic_id === selectedEpic.id).length === 0 ? (
+                  <div style={{ 
+                    padding: '32px', 
+                    textAlign: 'center', 
+                    background: 'rgba(0, 0, 0, 0.02)', 
+                    borderRadius: '8px',
+                    color: 'rgba(0, 0, 0, 0.45)'
+                  }}>
+                    Aucune tâche associée à cet epic
+                  </div>
+                ) : (
+                  projectTasks.filter(t => t.epic_id === selectedEpic.id).map(task => (
+                    <div
+                      key={task.id}
+                      style={{
+                        padding: '16px',
+                        background: '#ffffff',
+                        border: '1px solid rgba(0, 0, 0, 0.06)',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '12px'
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ 
+                          fontSize: '14px', 
+                          fontWeight: 600, 
+                          color: '#1a1a1a',
+                          marginBottom: '4px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {task.title}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)' }}>
+                          {task.assignee?.name || 'Non assigné'}
+                          {task.sprint && ` • Sprint: ${projectSprints.find(s => s.id === task.sprint_id)?.name || 'N/A'}`}
+                        </div>
+                      </div>
+                      <div style={{
+                        padding: '4px 12px',
+                        borderRadius: '6px',
+                        background: task.status === 'done' ? '#52c41a' : task.status === 'in_progress' ? '#1890ff' : '#d9d9d9',
+                        color: '#ffffff',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        flexShrink: 0
+                      }}>
+                        {task.status === 'done' ? 'Terminé' : task.status === 'in_progress' ? 'En cours' : 'À faire'}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div style={{ 
+              marginTop: '24px', 
+              padding: '16px', 
+              background: `linear-gradient(135deg, ${selectedEpic.color || '#722ed1'}08, ${selectedEpic.color || '#722ed1'}03)`,
+              borderRadius: '8px',
+              border: `1px solid ${selectedEpic.color || '#722ed1'}30`
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', textAlign: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#52c41a' }}>
+                    {projectTasks.filter(t => t.epic_id === selectedEpic.id && t.status === 'done').length}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.65)' }}>Terminées</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#1890ff' }}>
+                    {projectTasks.filter(t => t.epic_id === selectedEpic.id && t.status === 'in_progress').length}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.65)' }}>En cours</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: 'rgba(0, 0, 0, 0.45)' }}>
+                    {projectTasks.filter(t => t.epic_id === selectedEpic.id && t.status === 'todo').length}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.65)' }}>À faire</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal Détails Sprint */}
+      {selectedSprint && (
+        <Modal
+          open={true}
+          onCancel={() => setSelectedSprint(null)}
+          footer={null}
+          width={700}
+        >
+          <div style={{ padding: '8px 0' }}>
+            {/* Header */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, rgba(82, 196, 26, 0.15), rgba(82, 196, 26, 0.05))',
+                  border: '2px solid #52c41a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Zap size={20} style={{ color: '#52c41a' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#1a1a1a', margin: '0 0 4px 0' }}>
+                    {selectedSprint.name}
+                  </h2>
+                  <div style={{ fontSize: '13px', color: 'rgba(0, 0, 0, 0.45)' }}>
+                    {dayjs(selectedSprint.starts_at).format('DD MMM YYYY')} - {dayjs(selectedSprint.ends_at).format('DD MMM YYYY')}
+                  </div>
+                </div>
+              </div>
+              {selectedSprint.goal && (
+                <div style={{ 
+                  padding: '12px 16px', 
+                  background: 'rgba(82, 196, 26, 0.05)', 
+                  borderRadius: '8px',
+                  border: '1px solid rgba(82, 196, 26, 0.15)'
+                }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(0, 0, 0, 0.45)', marginBottom: '4px' }}>
+                    OBJECTIF
+                  </div>
+                  <p style={{ fontSize: '14px', color: 'rgba(0, 0, 0, 0.85)', margin: 0, lineHeight: 1.6 }}>
+                    {selectedSprint.goal}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Tâches du sprint */}
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#1a1a1a', marginBottom: '16px' }}>
+                Tâches du sprint ({projectTasks.filter(t => t.sprint_id === selectedSprint.id).length})
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
+                {projectTasks.filter(t => t.sprint_id === selectedSprint.id).length === 0 ? (
+                  <div style={{ 
+                    padding: '32px', 
+                    textAlign: 'center', 
+                    background: 'rgba(0, 0, 0, 0.02)', 
+                    borderRadius: '8px',
+                    color: 'rgba(0, 0, 0, 0.45)'
+                  }}>
+                    Aucune tâche associée à ce sprint
+                  </div>
+                ) : (
+                  projectTasks.filter(t => t.sprint_id === selectedSprint.id).map(task => {
+                    const taskEpic = projectEpics.find(e => e.id === task.epic_id)
+                    return (
+                      <div
+                        key={task.id}
+                        style={{
+                          padding: '16px',
+                          background: '#ffffff',
+                          border: '1px solid rgba(0, 0, 0, 0.06)',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '12px'
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ 
+                            fontSize: '14px', 
+                            fontWeight: 600, 
+                            color: '#1a1a1a',
+                            marginBottom: '6px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {task.title}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)' }}>
+                              {task.assignee?.name || 'Non assigné'}
+                            </span>
+                            {taskEpic && (
+                              <div style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                background: `${taskEpic.color}15`,
+                                border: `1px solid ${taskEpic.color}30`
+                              }}>
+                                <div style={{
+                                  width: '6px',
+                                  height: '6px',
+                                  borderRadius: '50%',
+                                  background: taskEpic.color
+                                }} />
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: taskEpic.color }}>
+                                  {taskEpic.name}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{
+                          padding: '4px 12px',
+                          borderRadius: '6px',
+                          background: task.status === 'done' ? '#52c41a' : task.status === 'in_progress' ? '#1890ff' : '#d9d9d9',
+                          color: '#ffffff',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          flexShrink: 0
+                        }}>
+                          {task.status === 'done' ? 'Terminé' : task.status === 'in_progress' ? 'En cours' : 'À faire'}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div style={{ 
+              marginTop: '24px', 
+              padding: '16px', 
+              background: 'linear-gradient(135deg, rgba(82, 196, 26, 0.08), rgba(82, 196, 26, 0.03))',
+              borderRadius: '8px',
+              border: '1px solid rgba(82, 196, 26, 0.2)'
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', textAlign: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#52c41a' }}>
+                    {projectTasks.filter(t => t.sprint_id === selectedSprint.id && t.status === 'done').length}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.65)' }}>Terminées</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: '#1890ff' }}>
+                    {projectTasks.filter(t => t.sprint_id === selectedSprint.id && t.status === 'in_progress').length}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.65)' }}>En cours</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: 'rgba(0, 0, 0, 0.45)' }}>
+                    {projectTasks.filter(t => t.sprint_id === selectedSprint.id && t.status === 'todo').length}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.65)' }}>À faire</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
