@@ -58,11 +58,16 @@ export default function ProfileModern() {
           password_confirmation: values.password_confirmation 
         })
       })
-      if (!resp.ok) throw new Error('Mise à jour échouée')
+      if (!resp.ok) {
+        const error = await resp.json()
+        console.error('Erreur:', error)
+        throw new Error('Mise à jour échouée')
+      }
       
       message.success('Mot de passe mis à jour')
       passwordForm.resetFields()
     } catch (e) {
+      console.error('Exception:', e)
       message.error('Impossible de mettre à jour le mot de passe')
     } finally {
       setSavingPassword(false)

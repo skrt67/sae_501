@@ -87,7 +87,7 @@ class AuthController extends Controller
     public function updatePassword(Request $request)
     {
         $data = $request->validate([
-            'password' => ['required', Password::min(8)->mixedCase()->numbers()->symbols(), 'confirmed'],
+            'password' => ['required', Password::min(8), 'confirmed'],
             'password_confirmation' => ['required'],
         ]);
 
