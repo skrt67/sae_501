@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://sae501-tspy3.ondigitalocean.app/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
