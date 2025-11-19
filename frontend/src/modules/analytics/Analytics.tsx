@@ -17,7 +17,7 @@ export default function AnalyticsImproved() {
   const navigate = useNavigate()
   const [selectedProject, setSelectedProject] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'sprint' | 'project'>('sprint')
-  
+
   const { projects } = useProjects()
   const { tasks } = useTasks(selectedProject)
   const { sprints } = useSprints(selectedProject)
@@ -41,34 +41,34 @@ export default function AnalyticsImproved() {
     const todoTasks = filteredTasks.filter(t => t.status === 'todo').length
     const inProgressTasks = filteredTasks.filter(t => t.status === 'in_progress').length
     const doneTasks = filteredTasks.filter(t => t.status === 'done').length
-    
-    const completionRate = totalTasks > 0 
-      ? Math.round((doneTasks / totalTasks) * 100) 
+
+    const completionRate = totalTasks > 0
+      ? Math.round((doneTasks / totalTasks) * 100)
       : 0
 
-    const overdueTasks = filteredTasks.filter(t => 
+    const overdueTasks = filteredTasks.filter(t =>
       t.due_date && dayjs(t.due_date).isBefore(now) && t.status !== 'done'
     ).length
 
-    const dueThisWeek = filteredTasks.filter(t => 
-      t.due_date && 
-      dayjs(t.due_date).isAfter(now) && 
+    const dueThisWeek = filteredTasks.filter(t =>
+      t.due_date &&
+      dayjs(t.due_date).isAfter(now) &&
       dayjs(t.due_date).isBefore(now.add(7, 'day'))
     ).length
 
-    const createdThisWeek = filteredTasks.filter(t => 
+    const createdThisWeek = filteredTasks.filter(t =>
       dayjs(t.created_at).isAfter(weekAgo)
     ).length
 
-    const completedThisWeek = filteredTasks.filter(t => 
+    const completedThisWeek = filteredTasks.filter(t =>
       t.status === 'done' && dayjs(t.updated_at).isAfter(weekAgo)
     ).length
 
-    const createdThisMonth = filteredTasks.filter(t => 
+    const createdThisMonth = filteredTasks.filter(t =>
       dayjs(t.created_at).isAfter(monthAgo)
     ).length
 
-    const completedThisMonth = filteredTasks.filter(t => 
+    const completedThisMonth = filteredTasks.filter(t =>
       t.status === 'done' && dayjs(t.updated_at).isAfter(monthAgo)
     ).length
 
@@ -91,7 +91,7 @@ export default function AnalyticsImproved() {
   // Répartition des tâches par membre
   const tasksByMember = useMemo(() => {
     const memberMap = new Map()
-    
+
     filteredTasks.forEach(task => {
       if (task.assignee) {
         const key = task.assignee.id
@@ -105,7 +105,7 @@ export default function AnalyticsImproved() {
             todo: 0
           })
         }
-        
+
         const member = memberMap.get(key)
         member.total++
         if (task.status === 'done') member.done++
@@ -113,41 +113,41 @@ export default function AnalyticsImproved() {
         else member.todo++
       }
     })
-    
+
     return Array.from(memberMap.values())
   }, [filteredTasks])
 
   // Données pour le Burndown Chart
   const burndownData = useMemo(() => {
     if (!selectedProject) return null
-    
+
     if (viewMode === 'project') {
       // Vue projet : toutes les tâches du projet
       const totalPoints = filteredTasks.length
       if (totalPoints === 0) return null
-      
+
       // Trouver les dates min/max du projet
       const projectData = projects.find(p => p.id === selectedProject)
       if (!projectData) return null
-      
+
       // Utiliser les dates des sprints ou dates par défaut
-      const allSprints = filteredSprints.sort((a, b) => 
+      const allSprints = filteredSprints.sort((a, b) =>
         new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
       )
-      
+
       if (allSprints.length === 0) return null
-      
+
       const startDate = dayjs(allSprints[0].starts_at)
       const lastSprint = allSprints[allSprints.length - 1]
       const endDate = dayjs(lastSprint.ends_at)
       const totalDays = endDate.diff(startDate, 'day')
-      
+
       if (totalDays <= 0) return null
-      
+
       const currentDay = Math.min(Math.max(0, dayjs().diff(startDate, 'day')), totalDays)
       const doneTasks = filteredTasks.filter(t => t.status === 'done').length
       const remainingTasks = totalPoints - doneTasks
-      
+
       // Ligne idéale
       const idealLine: Array<{ day: number; remaining: number }> = []
       for (let i = 0; i <= totalDays; i++) {
@@ -156,40 +156,39 @@ export default function AnalyticsImproved() {
           remaining: Math.max(0, totalPoints - (totalPoints / totalDays) * i)
         })
       }
-      
+
       // Ligne réelle
+      // Ligne réelle basée sur l'historique
       const actualLine: Array<{ day: number; remaining: number }> = []
       actualLine.push({ day: 0, remaining: totalPoints })
-      
+
       if (currentDay >= 0) {
-        const steps = Math.max(currentDay, 1)
-        for (let i = 1; i <= steps; i++) {
-          const dayNum = (currentDay / steps) * i
-          const progress = i / steps
-          const sigmoid = 1 / (1 + Math.exp(-10 * (progress - 0.5)))
-          const tasksCompleted = Math.floor(doneTasks * sigmoid)
+        for (let i = 1; i <= currentDay; i++) {
+          const dateAtDay = startDate.add(i, 'day')
+          const completedAtDate = filteredTasks.filter(t =>
+            t.status === 'done' &&
+            t.updated_at &&
+            dayjs(t.updated_at).isBefore(dateAtDay.endOf('day'))
+          ).length
+
           actualLine.push({
-            day: dayNum,
-            remaining: Math.max(0, totalPoints - tasksCompleted)
+            day: i,
+            remaining: Math.max(0, totalPoints - completedAtDate)
           })
         }
-        if (actualLine.length > 1) {
-          actualLine[actualLine.length - 1].day = currentDay
-          actualLine[actualLine.length - 1].remaining = remainingTasks
-        }
       }
-      
+
       if (actualLine.length === 1 && currentDay >= 0) {
         actualLine.push({ day: currentDay, remaining: remainingTasks })
       }
-      
+
       const idealRemaining = totalPoints - (totalPoints / totalDays) * currentDay
       const variance = remainingTasks - idealRemaining
       const status = variance < 0 ? 'ahead' : variance > 0 ? 'behind' : 'on-track'
-      
+
       return {
-        sprint: { 
-          id: 0, 
+        sprint: {
+          id: 0,
           name: projectData.name,
           starts_at: startDate.format('YYYY-MM-DD'),
           ends_at: endDate.format('YYYY-MM-DD')
@@ -205,23 +204,23 @@ export default function AnalyticsImproved() {
         variance: Math.abs(variance)
       }
     }
-    
+
     // Vue sprint : sprint actif uniquement
     const activeSprint = filteredSprints.find(s => s.is_active)
     if (!activeSprint) return null
 
     const sprintTasks = filteredTasks.filter(t => t.sprint_id === activeSprint.id)
     const totalPoints = sprintTasks.length
-    
+
     if (totalPoints === 0) return null
-    
+
     const startDate = dayjs(activeSprint.starts_at)
     const endDate = dayjs(activeSprint.ends_at)
     const totalDays = endDate.diff(startDate, 'day')
-    
+
     // Vérifier que le sprint a une durée valide
     if (totalDays <= 0) return null
-    
+
     // Ligne idéale (décroissance linéaire)
     const idealLine: Array<{ day: number; remaining: number }> = []
     for (let i = 0; i <= totalDays; i++) {
@@ -230,54 +229,46 @@ export default function AnalyticsImproved() {
         remaining: Math.max(0, totalPoints - (totalPoints / totalDays) * i)
       })
     }
-    
+
     // Ligne réelle basée sur l'état actuel
-    const actualLine: Array<{ day: number; remaining: number }> = []
     const currentDay = Math.min(Math.max(0, dayjs().diff(startDate, 'day')), totalDays)
-    
+
     // Compter les tâches par statut
     const doneTasks = sprintTasks.filter(t => t.status === 'done').length
     const remainingTasks = totalPoints - doneTasks
-    
+
+    // Ligne réelle basée sur l'historique
+    const actualLine: Array<{ day: number; remaining: number }> = []
+
     // Point de départ (jour 0)
     actualLine.push({ day: 0, remaining: totalPoints })
-    
-    // Si on est au jour 0 ou plus, créer une progression
+
     if (currentDay >= 0) {
-      // Créer des points intermédiaires pour une courbe lisse
-      const steps = Math.max(currentDay, 1) // Au moins 1 step pour avoir une ligne
-      
-      for (let i = 1; i <= steps; i++) {
-        const dayNum = (currentDay / steps) * i
-        const progress = i / steps
-        
-        // Courbe en S (lent au début, rapide au milieu, ralentit à la fin)
-        const sigmoid = 1 / (1 + Math.exp(-10 * (progress - 0.5)))
-        const tasksCompleted = Math.floor(doneTasks * sigmoid)
-        
+      for (let i = 1; i <= currentDay; i++) {
+        const dateAtDay = startDate.add(i, 'day')
+        const completedAtDate = sprintTasks.filter(t =>
+          t.status === 'done' &&
+          t.updated_at &&
+          dayjs(t.updated_at).isBefore(dateAtDay.endOf('day'))
+        ).length
+
         actualLine.push({
-          day: dayNum,
-          remaining: Math.max(0, totalPoints - tasksCompleted)
+          day: i,
+          remaining: Math.max(0, totalPoints - completedAtDate)
         })
       }
-      
-      // S'assurer que le dernier point correspond exactement à l'état actuel
-      if (actualLine.length > 1) {
-        actualLine[actualLine.length - 1].day = currentDay
-        actualLine[actualLine.length - 1].remaining = remainingTasks
-      }
     }
-    
+
     // Si on n'a qu'un point, ajouter un deuxième point au jour actuel
     if (actualLine.length === 1 && currentDay >= 0) {
       actualLine.push({ day: currentDay, remaining: remainingTasks })
     }
-    
+
     // Calculer si on est en avance ou en retard
     const idealRemaining = totalPoints - (totalPoints / totalDays) * currentDay
     const variance = remainingTasks - idealRemaining
     const status = variance < 0 ? 'ahead' : variance > 0 ? 'behind' : 'on-track'
-    
+
     return {
       sprint: activeSprint,
       totalPoints,
@@ -304,7 +295,7 @@ export default function AnalyticsImproved() {
       dayjs(t.created_at).format('DD/MM/YYYY'),
       t.due_date ? dayjs(t.due_date).format('DD/MM/YYYY') : ''
     ])
-    
+
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
@@ -335,7 +326,7 @@ export default function AnalyticsImproved() {
               Tableaux de bord et indicateurs de performance
             </p>
           </div>
-          
+
           <div style={{ display: 'flex', gap: '12px' }}>
             <Select
               placeholder="Tous les projets"
@@ -349,7 +340,7 @@ export default function AnalyticsImproved() {
                 <Option key={p.id} value={p.id}>{p.name}</Option>
               ))}
             </Select>
-            
+
             {selectedProject && (
               <Select
                 value={viewMode}
@@ -361,7 +352,7 @@ export default function AnalyticsImproved() {
                 <Option value="project">Vue Projet Global</Option>
               </Select>
             )}
-            
+
             <Button
               icon={<FileSpreadsheet size={18} />}
               onClick={exportCSV}
@@ -370,7 +361,7 @@ export default function AnalyticsImproved() {
             >
               Export CSV
             </Button>
-            
+
             <Button
               icon={<FileText size={18} />}
               onClick={exportPDF}
@@ -411,9 +402,9 @@ export default function AnalyticsImproved() {
         </div>
 
         {/* Avancement global */}
-        <div style={{ 
-          background: '#ffffff', 
-          borderRadius: '12px', 
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
           padding: '32px',
           marginBottom: '32px',
           border: '1px solid rgba(0, 0, 0, 0.06)'
@@ -421,7 +412,7 @@ export default function AnalyticsImproved() {
           <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '24px' }}>
             Avancement global
           </h2>
-          
+
           <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
               <span style={{ fontSize: '16px', fontWeight: '500' }}>Progression</span>
@@ -429,8 +420,8 @@ export default function AnalyticsImproved() {
                 {stats.doneTasks} / {stats.totalTasks} tâches
               </span>
             </div>
-            <Progress 
-              percent={stats.completionRate} 
+            <Progress
+              percent={stats.completionRate}
               strokeColor="#11998e"
               trailColor="rgba(0, 0, 0, 0.06)"
               size={{ height: 12 }}
@@ -460,9 +451,9 @@ export default function AnalyticsImproved() {
         </div>
 
         {/* Répartition par membre */}
-        <div style={{ 
-          background: '#ffffff', 
-          borderRadius: '12px', 
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px',
           padding: '32px',
           marginBottom: '32px',
           border: '1px solid rgba(0, 0, 0, 0.06)'
@@ -471,7 +462,7 @@ export default function AnalyticsImproved() {
             <Users size={24} style={{ color: '#667eea' }} />
             Répartition des tâches par membre
           </h2>
-          
+
           {tasksByMember.length === 0 ? (
             <p style={{ color: 'rgba(0, 0, 0, 0.45)', textAlign: 'center', padding: '40px' }}>
               Aucune tâche assignée
@@ -487,9 +478,9 @@ export default function AnalyticsImproved() {
 
         {/* Burndown Chart */}
         {burndownData && (
-          <div style={{ 
-            background: '#ffffff', 
-            borderRadius: '12px', 
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '12px',
             padding: '32px',
             marginBottom: '32px',
             border: '1px solid rgba(0, 0, 0, 0.06)'
@@ -499,8 +490,8 @@ export default function AnalyticsImproved() {
                 <TrendingDown size={24} style={{ color: '#f5576c' }} />
                 Burndown Chart - {burndownData.sprint.name}
               </h2>
-              <div style={{ 
-                padding: '8px 16px', 
+              <div style={{
+                padding: '8px 16px',
                 borderRadius: '8px',
                 background: burndownData.status === 'ahead' ? '#f6ffed' : burndownData.status === 'behind' ? '#fff1f0' : '#e6f7ff',
                 border: `1px solid ${burndownData.status === 'ahead' ? '#b7eb8f' : burndownData.status === 'behind' ? '#ffa39e' : '#91d5ff'}`,
@@ -513,7 +504,7 @@ export default function AnalyticsImproved() {
                 {burndownData.status === 'on-track' && '✅ Dans les temps'}
               </div>
             </div>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
               <div style={{ padding: '16px', background: '#fafafa', borderRadius: '8px' }}>
                 <div style={{ fontSize: '13px', color: 'rgba(0, 0, 0, 0.45)', marginBottom: '4px' }}>Total tâches</div>
@@ -532,7 +523,7 @@ export default function AnalyticsImproved() {
                 <div style={{ fontSize: '24px', fontWeight: '600' }}>{Math.round((burndownData.currentDay / burndownData.totalDays) * 100)}%</div>
               </div>
             </div>
-            
+
             <BurndownChart data={burndownData} />
           </div>
         )}
@@ -571,14 +562,14 @@ function KPICard({ icon, title, value, color }: any) {
       border: '1px solid rgba(0, 0, 0, 0.06)',
       transition: 'transform 0.2s',
     }}
-    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
-    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
+      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-        <div style={{ 
-          width: '48px', 
-          height: '48px', 
-          borderRadius: '12px', 
+        <div style={{
+          width: '48px',
+          height: '48px',
+          borderRadius: '12px',
           background: `${color}15`,
           display: 'flex',
           alignItems: 'center',
@@ -600,14 +591,14 @@ function KPICard({ icon, title, value, color }: any) {
 
 function StatusCard({ label, count, total, color }: any) {
   const percent = total > 0 ? Math.round((count / total) * 100) : 0
-  
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
         <span style={{ fontSize: '14px', fontWeight: '500' }}>{label}</span>
         <span style={{ fontSize: '14px', fontWeight: '600' }}>{count}</span>
       </div>
-      <Progress 
+      <Progress
         percent={percent}
         strokeColor={color}
         trailColor="rgba(0, 0, 0, 0.06)"
@@ -618,8 +609,8 @@ function StatusCard({ label, count, total, color }: any) {
 }
 
 function MemberCard({ member }: any) {
-  const completionRate = member.total > 0 
-    ? Math.round((member.done / member.total) * 100) 
+  const completionRate = member.total > 0
+    ? Math.round((member.done / member.total) * 100)
     : 0
 
   return (
@@ -651,7 +642,7 @@ function MemberCard({ member }: any) {
             </div>
           </div>
         </div>
-        
+
         <div style={{ display: 'flex', gap: '16px', fontSize: '13px' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontWeight: '600', color: '#6f767e' }}>{member.todo}</div>
@@ -667,8 +658,8 @@ function MemberCard({ member }: any) {
           </div>
         </div>
       </div>
-      
-      <Progress 
+
+      <Progress
         percent={completionRate}
         strokeColor="#11998e"
         trailColor="rgba(0, 0, 0, 0.06)"
@@ -680,7 +671,7 @@ function MemberCard({ member }: any) {
 
 function BurndownChart({ data }: any) {
   const { idealLine, actualLine, currentDay, totalDays, totalPoints } = data
-  
+
   // Vérifications pour éviter les NaN
   if (!totalDays || totalDays <= 0 || !totalPoints || totalPoints <= 0) {
     return (
@@ -689,15 +680,15 @@ function BurndownChart({ data }: any) {
       </div>
     )
   }
-  
+
   const maxY = totalPoints
   const chartHeight = 350
   const chartWidth = 700
   const padding = { top: 20, right: 40, bottom: 60, left: 60 }
-  
+
   const innerWidth = chartWidth - padding.left - padding.right
   const innerHeight = chartHeight - padding.top - padding.bottom
-  
+
   // Calculer les points pour le graphique avec protection contre NaN
   const getX = (day: number) => {
     const x = padding.left + (day / totalDays) * innerWidth
@@ -707,7 +698,7 @@ function BurndownChart({ data }: any) {
     const y = padding.top + (1 - remaining / maxY) * innerHeight
     return isNaN(y) ? padding.top : y
   }
-  
+
   return (
     <div style={{ padding: '24px', background: '#fafafa', borderRadius: '12px' }}>
       {/* Légende en haut */}
@@ -749,7 +740,7 @@ function BurndownChart({ data }: any) {
             </g>
           )
         })}
-        
+
         {/* Grille verticale (jours) */}
         {[0, Math.floor(totalDays * 0.25), Math.floor(totalDays * 0.5), Math.floor(totalDays * 0.75), totalDays].map((day) => {
           const x = getX(day)
@@ -775,10 +766,10 @@ function BurndownChart({ data }: any) {
             </g>
           )
         })}
-        
+
         {/* Ligne idéale (verte) */}
         <polyline
-          points={idealLine.map((p) => 
+          points={idealLine.map((p) =>
             `${getX(p.day)},${getY(p.remaining)}`
           ).join(' ')}
           fill="none"
@@ -787,17 +778,17 @@ function BurndownChart({ data }: any) {
           strokeDasharray="8,4"
           opacity="0.7"
         />
-        
+
         {/* Ligne réelle (bleue) */}
         <polyline
-          points={actualLine.map((p) => 
+          points={actualLine.map((p) =>
             `${getX(p.day)},${getY(p.remaining)}`
           ).join(' ')}
           fill="none"
           stroke="#1890ff"
           strokeWidth="4"
         />
-        
+
         {/* Points sur la ligne réelle */}
         {actualLine.map((p, i) => (
           <circle
@@ -810,7 +801,7 @@ function BurndownChart({ data }: any) {
             strokeWidth="2"
           />
         ))}
-        
+
         {/* Point actuel (plus gros) */}
         {actualLine.length > 0 && (
           <circle
@@ -822,7 +813,7 @@ function BurndownChart({ data }: any) {
             strokeWidth="3"
           />
         )}
-        
+
         {/* Labels des axes */}
         <text
           x={chartWidth / 2}
@@ -834,7 +825,7 @@ function BurndownChart({ data }: any) {
         >
           Jours du sprint
         </text>
-        
+
         <text
           x={15}
           y={chartHeight / 2}
@@ -847,12 +838,12 @@ function BurndownChart({ data }: any) {
           Tâches restantes
         </text>
       </svg>
-      
+
       {/* Statistiques sous le graphique */}
-      <div style={{ 
-        marginTop: '24px', 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(3, 1fr)', 
+      <div style={{
+        marginTop: '24px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
         gap: '16px',
         padding: '20px',
         background: '#ffffff',
@@ -884,7 +875,7 @@ function BurndownChart({ data }: any) {
           </div>
         </div>
       </div>
-      
+
       <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <div style={{ padding: '16px', background: 'rgba(24, 144, 255, 0.05)', borderRadius: '8px', border: '1px solid rgba(24, 144, 255, 0.2)' }}>
           <div style={{ fontSize: '13px', color: 'rgba(0, 0, 0, 0.65)', lineHeight: '1.6' }}>
@@ -895,7 +886,7 @@ function BurndownChart({ data }: any) {
             • Au dessus de la verte = en retard ⚠️
           </div>
         </div>
-        
+
         <div style={{ padding: '16px', background: 'rgba(0, 0, 0, 0.02)', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
           <div style={{ fontSize: '13px', color: 'rgba(0, 0, 0, 0.65)', lineHeight: '1.6' }}>
             <strong>État du sprint :</strong><br />
