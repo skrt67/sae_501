@@ -18,11 +18,11 @@ interface ProjectMembersModalProps {
   onMembersUpdated?: () => void
 }
 
-export default function ProjectMembersModal({ 
-  visible, 
-  onClose, 
-  project, 
-  onMembersUpdated 
+export default function ProjectMembersModal({
+  visible,
+  onClose,
+  project,
+  onMembersUpdated
 }: ProjectMembersModalProps) {
   const { token, user } = useAuth()
   const [members, setMembers] = useState<Member[]>([])
@@ -39,7 +39,7 @@ export default function ProjectMembersModal({
 
   const loadMembers = async () => {
     if (!project) return
-    
+
     try {
       const resp = await fetch(`/api/projects/${project.id}/members`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
@@ -69,7 +69,7 @@ export default function ProjectMembersModal({
 
   const addMember = async (userId: number) => {
     if (!project) return
-    
+
     setAdding(true)
     try {
       const resp = await fetch(`/api/projects/${project.id}/members`, {
@@ -99,7 +99,7 @@ export default function ProjectMembersModal({
 
   const removeMember = async (userId: number) => {
     if (!project) return
-    
+
     try {
       const resp = await fetch(`/api/projects/${project.id}/members/${userId}`, {
         method: 'DELETE',
@@ -141,7 +141,7 @@ export default function ProjectMembersModal({
   }
 
   // Filtrer les utilisateurs qui ne sont pas déjà membres
-  const usersToAdd = availableUsers.filter(u => 
+  const usersToAdd = availableUsers.filter(u =>
     !members.some(m => m.id === u.id)
   )
 
@@ -149,14 +149,14 @@ export default function ProjectMembersModal({
     <Modal
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            borderRadius: 'var(--radius-md)', 
-            background: 'var(--primary)' + '15', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center' 
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--primary)' + '15',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
             <Users size={20} style={{ color: 'var(--primary)' }} />
           </div>
@@ -177,17 +177,17 @@ export default function ProjectMembersModal({
     >
       <div style={{ marginTop: '24px' }}>
         {/* Ajouter un membre */}
-        <div style={{ 
-          padding: '16px', 
-          background: 'var(--bg-hover)', 
-          borderRadius: 'var(--radius-md)', 
-          marginBottom: '24px' 
+        <div style={{
+          padding: '16px',
+          background: 'var(--bg-hover)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '24px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
             <UserPlus size={18} style={{ color: 'var(--primary)' }} />
             <span style={{ fontSize: '15px', fontWeight: '500' }}>Ajouter un membre</span>
           </div>
-          
+
           <Select
             placeholder="Sélectionner un utilisateur"
             style={{ width: '100%' }}
@@ -216,14 +216,14 @@ export default function ProjectMembersModal({
           <h4 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px' }}>
             Membres actuels ({members.length})
           </h4>
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {members.map((member) => (
-              <div 
+              <div
                 key={member.id}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '12px 16px',
                   background: 'var(--bg-card)',
@@ -232,29 +232,29 @@ export default function ProjectMembersModal({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Avatar 
-                    size={40} 
-                    src={member.avatar_url ? 
-                      (member.avatar_url.startsWith('http') ? member.avatar_url : `http://localhost:8005${member.avatar_url}`) 
+                  <Avatar
+                    size={40}
+                    src={member.avatar_url ?
+                      (member.avatar_url.startsWith('http') ? member.avatar_url : `${import.meta.env.VITE_API_URL}${member.avatar_url}`)
                       : null
                     }
                     style={{ background: 'var(--primary)' }}
                   >
                     {member.name.charAt(0).toUpperCase()}
                   </Avatar>
-                  
+
                   <div>
-                    <div style={{ 
-                      fontSize: '15px', 
-                      fontWeight: '500', 
-                      color: 'var(--text)' 
+                    <div style={{
+                      fontSize: '15px',
+                      fontWeight: '500',
+                      color: 'var(--text)'
                     }}>
                       {member.name}
                       {member.id === user?.id && (
-                        <span style={{ 
-                          fontSize: '12px', 
-                          color: 'var(--text-muted)', 
-                          marginLeft: '8px' 
+                        <span style={{
+                          fontSize: '12px',
+                          color: 'var(--text-muted)',
+                          marginLeft: '8px'
                         }}>
                           (Vous)
                         </span>
@@ -267,9 +267,9 @@ export default function ProjectMembersModal({
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: '6px',
                     padding: '4px 8px',
                     background: 'var(--bg-hover)',

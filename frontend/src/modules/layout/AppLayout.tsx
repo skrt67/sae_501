@@ -173,7 +173,7 @@ export default function AppLayout() {
                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '14px', fontWeight: '600', overflow: 'hidden' }}>
                   {user?.avatar_url ? (
                     <img 
-                      src={user.avatar_url.startsWith('http') ? user.avatar_url : `http://localhost:8005${user.avatar_url}`}
+                      src={user.avatar_url.startsWith('http') ? user.avatar_url : `${import.meta.env.VITE_API_URL}${user.avatar_url}`}
                       alt={user?.name}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />

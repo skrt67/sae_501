@@ -109,7 +109,7 @@ export default function KanbanModern() {
         // Vérifier si on a un projectId dans l'URL (priorité)
         const urlParams = new URLSearchParams(window.location.search)
         const urlProjectId = urlParams.get('project')
-        
+
         if (urlProjectId) {
           const projectId = parseInt(urlProjectId, 10)
           if (!isNaN(projectId) && projectList.some(p => p.id === projectId)) {
@@ -119,7 +119,7 @@ export default function KanbanModern() {
             return // Important: sortir ici pour ne pas écraser
           }
         }
-        
+
         // Sinon, sélectionner automatiquement
         if (projectList.length > 0 && !selectedProjectId) {
           const activeProject = projectList.find(p => p.has_active_sprint)
@@ -162,7 +162,7 @@ export default function KanbanModern() {
           const me = meResp.ok ? await meResp.json() : null
           if (me && me.id) projectUsers = [{ id: me.id, name: me.name, email: me.email }]
         }
-        
+
         setUsers(projectUsers)
 
         // Charger les epics
@@ -179,7 +179,7 @@ export default function KanbanModern() {
           const sprintsData = await sprintsResp.json()
           const sprintsList = Array.isArray(sprintsData) ? sprintsData : (sprintsData.data || [])
           setSprints(sprintsList)
-          
+
           // Sélectionner le sprint actif par défaut
           if (sprintsList.length > 0) {
             const activeSprint = sprintsList.find(s => s.is_active)
@@ -210,7 +210,7 @@ export default function KanbanModern() {
       try {
         const sprintParam = selectedSprintId ? `&sprint_id=${selectedSprintId}` : ''
         const kanbanResp = await fetch(`/api/kanban?project_id=${selectedProjectId}${sprintParam}`, { headers: { Authorization: `Bearer ${token}` } })
-        
+
         if (kanbanResp.status === 404) {
           setBoard({ columns: { todo: [], in_progress: [], done: [] }, sprint: null })
         } else if (!kanbanResp.ok) {
@@ -258,7 +258,7 @@ export default function KanbanModern() {
         done: [...board.columns.done]
       }
     }
-    
+
     const taskToMove = newBoard.columns[oldStatus as keyof typeof newBoard.columns].find((task: Task) => task.id == taskId)
     if (!taskToMove) return
 
@@ -497,7 +497,7 @@ export default function KanbanModern() {
           </Button>
         </div>
       </div>
-      
+
       {/* Alert si pas de sprint */}
       {!loading && !board?.sprint && selectedProjectId && (
         <div style={{
@@ -519,7 +519,7 @@ export default function KanbanModern() {
                 {sprints.length === 0 ? 'Aucun sprint dans ce projet' : 'Aucun sprint actif'}
               </div>
               <div style={{ fontSize: '14px', color: 'rgba(0, 0, 0, 0.65)' }}>
-                {sprints.length === 0 
+                {sprints.length === 0
                   ? 'Créez votre premier sprint pour commencer à organiser vos tâches'
                   : 'Activez un sprint existant ou créez-en un nouveau pour voir le Kanban'
                 }
@@ -548,7 +548,7 @@ export default function KanbanModern() {
       <DragDropContext onDragEnd={handleDragEnd}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', maxWidth: '1600px', margin: '0 auto' }}>
           {columns.map((column) => (
-            <div key={column.key} style={{ 
+            <div key={column.key} style={{
               background: '#ffffff',
               border: '1px solid rgba(0, 0, 0, 0.06)',
               borderRadius: '12px',
@@ -564,7 +564,7 @@ export default function KanbanModern() {
                     {column.count}
                   </span>
                 </div>
-                <button 
+                <button
                   onClick={() => openCreateTask(column.key)}
                   style={{ width: '28px', height: '28px', border: 'none', background: 'transparent', color: 'rgba(0, 0, 0, 0.45)', cursor: 'pointer', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
                   onMouseEnter={(e) => {
@@ -634,7 +634,7 @@ export default function KanbanModern() {
                                   {task.title}
                                 </h4>
                                 {task.epic && (
-                                  <div style={{ 
+                                  <div style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '4px',
@@ -652,7 +652,7 @@ export default function KanbanModern() {
                                 )}
                               </div>
                               <div style={{ display: 'flex', gap: '4px' }}>
-                                <button 
+                                <button
                                   onClick={() => openEditTask(task)}
                                   style={{ width: '24px', height: '24px', border: 'none', background: 'transparent', color: 'rgba(0, 0, 0, 0.45)', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}
                                   onMouseEnter={(e) => {
@@ -666,7 +666,7 @@ export default function KanbanModern() {
                                 >
                                   <Pencil size={14} />
                                 </button>
-                                <button 
+                                <button
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     deleteTask(task.id)
@@ -699,7 +699,7 @@ export default function KanbanModern() {
                                     <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#000000', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', overflow: 'hidden' }}>
                                       {task.assignee.avatar_url ? (
                                         <img
-                                          src={task.assignee.avatar_url.startsWith('http') ? task.assignee.avatar_url : `http://localhost:8000${task.assignee.avatar_url}`}
+                                          src={task.assignee.avatar_url.startsWith('http') ? task.assignee.avatar_url : `${import.meta.env.VITE_API_URL}${task.assignee.avatar_url}`}
                                           alt={task.assignee.name}
                                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
@@ -723,7 +723,7 @@ export default function KanbanModern() {
                       </Draggable>
                     ))}
                     {provided.placeholder}
-                    
+
                     {/* Empty State */}
                     {board.columns[column.key].length === 0 && (
                       <div style={{ padding: '32px', textAlign: 'center', color: 'rgba(0, 0, 0, 0.25)', fontSize: '13px' }}>
@@ -748,14 +748,14 @@ export default function KanbanModern() {
       >
         <Form layout="vertical" onFinish={createTask} style={{ marginTop: '24px' }}>
           <Form.Item label="Titre" required>
-            <Input 
-              value={newTitle} 
-              onChange={(e) => setNewTitle(e.target.value)} 
-              placeholder="Titre de la tâche" 
+            <Input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Titre de la tâche"
               style={{ height: '44px', borderRadius: 'var(--radius-md)' }}
             />
           </Form.Item>
-          
+
           <Form.Item label="Epic">
             <Select
               allowClear
@@ -787,7 +787,7 @@ export default function KanbanModern() {
                 style={{ width: '100%' }}
               />
             </Form.Item>
-            
+
             <Form.Item label="Échéance">
               <DatePicker
                 style={{ width: '100%', height: '44px', borderRadius: 'var(--radius-md)' }}
@@ -796,11 +796,11 @@ export default function KanbanModern() {
               />
             </Form.Item>
           </div>
-          
+
           <Form.Item label="Description">
             <RichTextEditor value={newDescription} onChange={setNewDescription} />
           </Form.Item>
-          
+
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
             <Button onClick={() => setTaskModalOpen(false)} style={{ height: '40px', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.15)', background: 'transparent', color: '#1a1a1a' }}>
               Annuler
@@ -822,14 +822,14 @@ export default function KanbanModern() {
       >
         <Form layout="vertical" onFinish={saveTask} style={{ marginTop: '24px' }}>
           <Form.Item label="Titre" required>
-            <Input 
-              value={editTitle} 
-              onChange={(e) => setEditTitle(e.target.value)} 
-              placeholder="Titre de la tâche" 
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Titre de la tâche"
               style={{ height: '44px', borderRadius: 'var(--radius-md)' }}
             />
           </Form.Item>
-          
+
           <Form.Item label="Epic">
             <Select
               allowClear
@@ -861,7 +861,7 @@ export default function KanbanModern() {
                 style={{ width: '100%' }}
               />
             </Form.Item>
-            
+
             <Form.Item label="Échéance">
               <DatePicker
                 style={{ width: '100%', height: '44px', borderRadius: 'var(--radius-md)' }}
@@ -870,11 +870,11 @@ export default function KanbanModern() {
               />
             </Form.Item>
           </div>
-          
+
           <Form.Item label="Description">
             <RichTextEditor value={editDescription} onChange={setEditDescription} />
           </Form.Item>
-          
+
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
             <Button onClick={() => setEditTask(null)} style={{ height: '40px', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.15)', background: 'transparent', color: '#1a1a1a' }}>
               Annuler

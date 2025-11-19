@@ -41,18 +41,18 @@ export default function UsersModern() {
   const loadProjects = async () => {
     setLoading(true)
     try {
-      const resp = await fetch('/api/projects', { 
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } 
+      const resp = await fetch('/api/projects', {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
       })
-      
+
       if (!resp.ok) {
         throw new Error('Erreur de chargement')
       }
-      
+
       const data = await resp.json()
       const projectsList = Array.isArray(data) ? data : (data.data || [])
       setProjects(projectsList)
-      
+
       // Sélectionner le premier projet par défaut
       if (projectsList.length > 0 && !selectedProject) {
         setSelectedProject(projectsList[0].id)
@@ -70,15 +70,15 @@ export default function UsersModern() {
       const resp = await fetch(`/api/projects/${projectId}/members`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
       })
-      
+
       if (!resp.ok) {
         throw new Error('Erreur de chargement')
       }
-      
+
       const members = await resp.json()
-      
+
       // Mettre à jour le projet avec ses membres
-      setProjects(prev => prev.map(p => 
+      setProjects(prev => prev.map(p =>
         p.id === projectId ? { ...p, users: Array.isArray(members) ? members : (members.data || []) } : p
       ))
     } catch (e: any) {
@@ -104,15 +104,15 @@ export default function UsersModern() {
 
   const removeMember = async (userId: number) => {
     if (!selectedProject) return
-    
+
     try {
       const resp = await fetch(`/api/projects/${selectedProject}/members/${userId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
-      
+
       if (!resp.ok) throw new Error('Erreur')
-      
+
       message.success('Membre retiré du projet')
       loadProjectMembers(selectedProject)
     } catch (e) {
@@ -151,10 +151,10 @@ export default function UsersModern() {
         </div>
 
         {/* Project Selector */}
-        <div style={{ 
-          background: '#ffffff', 
-          border: '1px solid rgba(0, 0, 0, 0.06)', 
-          borderRadius: '12px', 
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid rgba(0, 0, 0, 0.06)',
+          borderRadius: '12px',
           padding: '24px',
           marginBottom: '32px',
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
@@ -176,7 +176,7 @@ export default function UsersModern() {
                 ))}
               </Select>
             </div>
-            
+
             <Button
               type="primary"
               onClick={openInviteModal}
@@ -302,21 +302,21 @@ export default function UsersModern() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
                     {/* Avatar */}
-                    <div style={{ 
-                      width: '56px', 
-                      height: '56px', 
-                      borderRadius: '50%', 
-                      background: roleInfo.color + '15', 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                    <div style={{
+                      width: '56px',
+                      height: '56px',
+                      borderRadius: '50%',
+                      background: roleInfo.color + '15',
+                      display: 'flex',
+                      alignItems: 'center',
                       justifyContent: 'center',
                       border: `2px solid ${roleInfo.color}30`,
                       flexShrink: 0,
                       overflow: 'hidden'
                     }}>
                       {member.avatar_url ? (
-                        <img 
-                          src={member.avatar_url.startsWith('http') ? member.avatar_url : `http://localhost:8005${member.avatar_url}`}
+                        <img
+                          src={member.avatar_url.startsWith('http') ? member.avatar_url : `${import.meta.env.VITE_API_URL}${member.avatar_url}`}
                           alt={member.name}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
