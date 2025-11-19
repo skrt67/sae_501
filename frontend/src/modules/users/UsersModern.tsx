@@ -14,7 +14,7 @@ interface User {
   id: number
   name: string
   email: string
-  avatar_url?: string
+
   role?: string
   pivot?: {
     role: 'owner' | 'member'
@@ -314,15 +314,7 @@ export default function UsersModern() {
                       flexShrink: 0,
                       overflow: 'hidden'
                     }}>
-                      {member.avatar_url ? (
-                        <img
-                          src={member.avatar_url.startsWith('http') ? member.avatar_url : `${import.meta.env.VITE_API_URL}${member.avatar_url}`}
-                          alt={member.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      ) : (
-                        <RoleIcon size={24} style={{ color: roleInfo.color }} />
-                      )}
+                      <RoleIcon size={24} style={{ color: roleInfo.color }} />
                     </div>
 
                     {/* Info */}

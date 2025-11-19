@@ -26,7 +26,7 @@ interface Task {
     id: number
     name: string
     email: string
-    avatar_url?: string
+
   }
   project?: {
     id: number
@@ -48,13 +48,13 @@ interface Project {
 export default function TasksSearch() {
   const { token } = useAuth()
   const navigate = useNavigate()
-  
+
   const { tasks: allTasks } = useTasks()
   const { projects: allProjects } = useProjects()
-  
+
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  
+
   // Filtres
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
@@ -62,7 +62,7 @@ export default function TasksSearch() {
   const [selectedProject, setSelectedProject] = useState<number | null>(null)
   const [selectedPriority, setSelectedPriority] = useState<number | null>(null)
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null)
-  
+
   // Extraire les utilisateurs uniques des projets
   const users: User[] = []
   const userIds = new Set<number>()
@@ -76,14 +76,14 @@ export default function TasksSearch() {
       })
     }
   })
-  
+
   const [showFilters, setShowFilters] = useState(false)
 
   if (!token) {
     navigate('/login')
     return null
   }
-  
+
   // Initialiser filteredTasks avec allTasks
   useEffect(() => {
     setFilteredTasks(allTasks)
@@ -96,7 +96,7 @@ export default function TasksSearch() {
     // Filtre par mot-clé
     if (searchKeyword.trim()) {
       const keyword = searchKeyword.toLowerCase()
-      result = result.filter(task => 
+      result = result.filter(task =>
         task.title.toLowerCase().includes(keyword) ||
         (task.description && task.description.toLowerCase().includes(keyword))
       )
@@ -203,10 +203,10 @@ export default function TasksSearch() {
         </div>
 
         {/* Barre de recherche principale */}
-        <div style={{ 
-          background: '#ffffff', 
-          border: '1px solid rgba(0, 0, 0, 0.06)', 
-          borderRadius: '12px', 
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid rgba(0, 0, 0, 0.06)',
+          borderRadius: '12px',
           padding: '24px',
           marginBottom: '24px'
         }}>
@@ -217,8 +217,8 @@ export default function TasksSearch() {
                 placeholder="Rechercher par titre ou description..."
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
-                style={{ 
-                  height: '48px', 
+                style={{
+                  height: '48px',
                   paddingLeft: '48px',
                   borderRadius: '8px',
                   fontSize: '15px',
@@ -263,9 +263,9 @@ export default function TasksSearch() {
 
           {/* Filtres avancés */}
           {showFilters && (
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '16px',
               paddingTop: '24px',
               borderTop: '1px solid rgba(0, 0, 0, 0.06)'
@@ -365,10 +365,10 @@ export default function TasksSearch() {
         {/* Liste des tâches */}
         <div style={{ display: 'grid', gap: '16px' }}>
           {filteredTasks.length === 0 ? (
-            <div style={{ 
-              background: '#ffffff', 
-              border: '1px solid rgba(0, 0, 0, 0.06)', 
-              borderRadius: '12px', 
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid rgba(0, 0, 0, 0.06)',
+              borderRadius: '12px',
               padding: '80px 24px',
               textAlign: 'center'
             }}>
@@ -407,17 +407,17 @@ export default function TasksSearch() {
                       {task.title}
                     </h3>
                     {task.description && (
-                      <div 
+                      <div
                         style={{ fontSize: '14px', color: 'rgba(0, 0, 0, 0.65)', lineHeight: '1.5' }}
-                        dangerouslySetInnerHTML={{ 
-                          __html: task.description.substring(0, 150) + (task.description.length > 150 ? '...' : '') 
+                        dangerouslySetInnerHTML={{
+                          __html: task.description.substring(0, 150) + (task.description.length > 150 ? '...' : '')
                         }}
                       />
                     )}
                   </div>
-                  <Tag 
+                  <Tag
                     color={getStatusColor(task.status)}
-                    style={{ 
+                    style={{
                       margin: '0 0 0 16px',
                       padding: '4px 12px',
                       borderRadius: '6px',
@@ -431,7 +431,7 @@ export default function TasksSearch() {
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
                   {task.epic && (
-                    <div style={{ 
+                    <div style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
@@ -547,11 +547,11 @@ export default function TasksSearch() {
                   <X size={20} />
                 </button>
               </div>
-              
+
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <Tag 
+                <Tag
                   color={getStatusColor(selectedTask.status)}
-                  style={{ 
+                  style={{
                     padding: '4px 12px',
                     borderRadius: '6px',
                     border: 'none',
@@ -560,7 +560,7 @@ export default function TasksSearch() {
                 >
                   {getStatusLabel(selectedTask.status)}
                 </Tag>
-                
+
                 {selectedTask.priority && (
                   <Tag
                     color={getPriorityColor(selectedTask.priority)}
@@ -583,10 +583,10 @@ export default function TasksSearch() {
                 <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#1a1a1a', marginBottom: '8px' }}>
                   Description
                 </h3>
-                <div 
-                  style={{ 
-                    fontSize: '14px', 
-                    color: 'rgba(0, 0, 0, 0.65)', 
+                <div
+                  style={{
+                    fontSize: '14px',
+                    color: 'rgba(0, 0, 0, 0.65)',
                     lineHeight: '1.6',
                     padding: '12px',
                     background: 'rgba(0, 0, 0, 0.02)',
@@ -615,7 +615,7 @@ export default function TasksSearch() {
                   <div style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(0, 0, 0, 0.45)', marginBottom: '4px' }}>
                     Epic
                   </div>
-                  <div style={{ 
+                  <div style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px',

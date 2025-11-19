@@ -234,10 +234,7 @@ export default function ProjectMembersModal({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <Avatar
                     size={40}
-                    src={member.avatar_url ?
-                      (member.avatar_url.startsWith('http') ? member.avatar_url : `${import.meta.env.VITE_API_URL}${member.avatar_url}`)
-                      : null
-                    }
+
                     style={{ background: 'var(--primary)' }}
                   >
                     {member.name.charAt(0).toUpperCase()}

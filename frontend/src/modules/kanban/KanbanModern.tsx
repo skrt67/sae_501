@@ -25,7 +25,7 @@ interface Task {
   assignee?: {
     id: number
     name: string
-    avatar_url?: string
+
   }
   due_date?: string
 }
@@ -697,15 +697,7 @@ export default function KanbanModern() {
                                 {task.assignee && (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#000000', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', overflow: 'hidden' }}>
-                                      {task.assignee.avatar_url ? (
-                                        <img
-                                          src={task.assignee.avatar_url.startsWith('http') ? task.assignee.avatar_url : `${import.meta.env.VITE_API_URL}${task.assignee.avatar_url}`}
-                                          alt={task.assignee.name}
-                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                        />
-                                      ) : (
-                                        task.assignee.name?.charAt(0).toUpperCase() || 'U'
-                                      )}
+                                      {task.assignee.name?.charAt(0).toUpperCase() || 'U'}
                                     </div>
                                     <span style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.65)' }}>{task.assignee.name}</span>
                                   </div>

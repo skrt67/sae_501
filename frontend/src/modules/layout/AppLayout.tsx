@@ -74,20 +74,20 @@ export default function AppLayout() {
         trigger={null}
         width={260}
         breakpoint="lg"
-        style={{ 
-          position: 'fixed', 
-          left: 0, 
-          top: 0, 
+        style={{
+          position: 'fixed',
+          left: 0,
+          top: 0,
           bottom: 0,
           background: 'var(--bg-card)',
           borderRight: '1px solid var(--border)'
         }}
       >
-        <div style={{ 
-          height: 72, 
-          display: 'flex', 
-          alignItems: 'center', 
-          padding: '0 24px', 
+        <div style={{
+          height: 72,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 24px',
           borderBottom: '1px solid var(--border)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -112,39 +112,39 @@ export default function AppLayout() {
           }}
           className="modern-menu"
         />
-        
+
 
       </Sider>
 
-      <Layout style={{ 
-        marginLeft: collapsed ? 80 : 260, 
-        transition: 'margin-left 0.2s ease', 
+      <Layout style={{
+        marginLeft: collapsed ? 80 : 260,
+        transition: 'margin-left 0.2s ease',
         background: 'var(--bg-page)',
         minHeight: '100vh'
       }}>
-        <Header style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 16, 
-          background: 'var(--bg-card)', 
-          borderBottom: '1px solid var(--border)', 
-          position: 'sticky', 
-          top: 0, 
+        <Header style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          background: 'var(--bg-card)',
+          borderBottom: '1px solid var(--border)',
+          position: 'sticky',
+          top: 0,
           zIndex: 9,
           padding: '0 32px',
           height: 72
         }}>
           <Space style={{ flex: 1 }}>
-            <Button 
-              type="text" 
-              onClick={() => setCollapsed(!collapsed)} 
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} 
+            <Button
+              type="text"
+              onClick={() => setCollapsed(!collapsed)}
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             />
           </Space>
-          
+
           <Space size="middle">
             <NotificationCenter />
-            
+
             <Dropdown
               trigger={["click"]}
               menu={{
@@ -167,27 +167,19 @@ export default function AppLayout() {
                 cursor: 'pointer',
                 transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '14px', fontWeight: '600', overflow: 'hidden' }}>
-                  {user?.avatar_url ? (
-                    <img 
-                      src={user.avatar_url.startsWith('http') ? user.avatar_url : `${import.meta.env.VITE_API_URL}${user.avatar_url}`}
-                      alt={user?.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    user?.name?.charAt(0).toUpperCase() || 'U'
-                  )}
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>{user?.name}</span>
               </button>
             </Dropdown>
-            
+
           </Space>
         </Header>
-        
+
         <Content style={{
           padding: '0',
           background: 'var(--bg-page)',
