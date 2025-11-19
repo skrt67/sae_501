@@ -13,7 +13,7 @@
 
 Before installing the application, ensure you have the following software installed:
 
-- **PHP** >= 8.1
+- **PHP** >= 8.2
 - **Composer** >= 2.0
 - **Node.js** >= 18.x
 - **npm** or **yarn**
@@ -166,7 +166,7 @@ npm run test
 
 Asano is a modern project management application built with a decoupled architecture:
 
-- **Backend**: RESTful API built with Laravel 10 (PHP)
+- **Backend**: RESTful API built with Laravel 12 (PHP)
 - **Frontend**: Single Page Application (SPA) built with React 18, TypeScript, and Vite
 - **Database**: MySQL/MariaDB with relational schema
 - **Authentication**: JWT-based token authentication with Laravel Sanctum
@@ -174,8 +174,8 @@ Asano is a modern project management application built with a decoupled architec
 ### Technology Stack
 
 #### Backend
-- **Framework**: Laravel 10.x
-- **Language**: PHP 8.1+
+- **Framework**: Laravel 12.x
+- **Language**: PHP 8.2+
 - **Database ORM**: Eloquent
 - **Authentication**: Laravel Sanctum
 - **Email**: Laravel Mail with queue support
@@ -190,12 +190,12 @@ Asano is a modern project management application built with a decoupled architec
 - **Build Tool**: Vite
 - **Routing**: React Router v6
 - **State Management**: React Context API + Custom Hooks
-- **HTTP Client**: Axios
-- **UI Components**: Custom components with Lucide React icons
+- **UI Library**: Ant Design 5.x
+- **Styling**: Tailwind CSS 4.x
+- **UI Icons**: Lucide React
 - **Rich Text Editor**: Quill.js
 - **Drag & Drop**: @hello-pangea/dnd
-- **Charts**: Recharts
-- **Date Handling**: date-fns
+- **Date Handling**: dayjs
 - **Testing**: Vitest + React Testing Library
 
 ### System Architecture
