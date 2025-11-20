@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Spin, Progress, Calendar as AntCalendar, Badge } from 'antd'
-import { 
-  TrendingUp, 
-  CheckCircle, 
-  Clock, 
-  Users, 
+import {
+  TrendingUp,
+  CheckCircle,
+  Clock,
+  Users,
   Target,
   Calendar,
   BarChart3,
@@ -92,8 +92,8 @@ export default function DashboardDuna() {
     }
   }
 
-  const completionRate = stats.totalTasks > 0 
-    ? Math.round((stats.completedTasks / stats.totalTasks) * 100) 
+  const completionRate = stats.totalTasks > 0
+    ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
     : 0
 
   if (loading) {
@@ -105,44 +105,44 @@ export default function DashboardDuna() {
   }
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: '#f8f9fa', 
-      padding: '60px 40px' 
+    <div style={{
+      minHeight: '100vh',
+      background: '#f8f9fa',
+      padding: '60px 40px'
     }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
         {/* Header */}
         <header style={{ marginBottom: '48px' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'flex-start',
             gap: '24px',
-            flexWrap: 'wrap' 
+            flexWrap: 'wrap'
           }}>
             <div>
-              <h1 style={{ 
-                fontSize: '42px', 
-                fontWeight: 600, 
-                color: '#1a1a1a', 
+              <h1 style={{
+                fontSize: '42px',
+                fontWeight: 600,
+                color: '#1a1a1a',
                 margin: '0 0 12px 0',
                 letterSpacing: '-0.02em',
                 lineHeight: 1.2
               }}>
                 Bonjour, {user?.name || 'Utilisateur'}
               </h1>
-              <p style={{ 
-                fontSize: '18px', 
-                color: 'rgba(0, 0, 0, 0.65)', 
+              <p style={{
+                fontSize: '18px',
+                color: 'rgba(0, 0, 0, 0.65)',
                 margin: 0,
                 lineHeight: 1.5
               }}>
                 Voici un aperçu de vos projets et tâches
               </p>
             </div>
-            <div style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
               gap: '8px',
               background: '#ffffff',
               padding: '8px 16px',
@@ -152,25 +152,25 @@ export default function DashboardDuna() {
               border: '1px solid rgba(0, 0, 0, 0.06)'
             }}>
               <Calendar size={20} />
-              <span>{new Date().toLocaleDateString('fr-FR', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              <span>{new Date().toLocaleDateString('fr-FR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
               })}</span>
             </div>
           </div>
         </header>
 
         {/* Main Stats Grid */}
-        <div style={{ 
-          display: 'grid', 
+        <div style={{
+          display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: '24px',
           marginBottom: '48px'
         }}>
           {/* Stat Card 1 - Projets */}
-          <div style={{ 
+          <div style={{
             background: '#ffffff',
             border: '1px solid rgba(0, 0, 0, 0.06)',
             borderRadius: '12px',
@@ -178,18 +178,18 @@ export default function DashboardDuna() {
             transition: 'all 0.3s ease',
             cursor: 'pointer'
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)'
-            e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)'
-            e.currentTarget.style.boxShadow = 'none'
-          }}>
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
+              <div style={{
+                width: '48px',
+                height: '48px',
                 borderRadius: '12px',
                 background: 'rgba(24, 144, 255, 0.1)',
                 color: '#1890ff',
@@ -199,8 +199,8 @@ export default function DashboardDuna() {
               }}>
                 <Target size={24} />
               </div>
-              <div style={{ 
-                fontSize: '13px', 
+              <div style={{
+                fontSize: '13px',
                 color: 'rgba(0, 0, 0, 0.45)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
@@ -211,8 +211,8 @@ export default function DashboardDuna() {
               <div style={{ fontSize: '36px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 8px 0' }}>
                 {stats.totalProjects}
               </div>
-              <div style={{ 
-                fontSize: '14px', 
+              <div style={{
+                fontSize: '14px',
                 color: 'rgba(0, 0, 0, 0.45)',
                 display: 'flex',
                 alignItems: 'center',
@@ -225,7 +225,7 @@ export default function DashboardDuna() {
           </div>
 
           {/* Stat Card 2 - Tâches */}
-          <div style={{ 
+          <div style={{
             background: '#ffffff',
             border: '1px solid rgba(0, 0, 0, 0.06)',
             borderRadius: '12px',
@@ -233,18 +233,18 @@ export default function DashboardDuna() {
             transition: 'all 0.3s ease',
             cursor: 'pointer'
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)'
-            e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)'
-            e.currentTarget.style.boxShadow = 'none'
-          }}>
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
+              <div style={{
+                width: '48px',
+                height: '48px',
                 borderRadius: '12px',
                 background: 'rgba(82, 196, 26, 0.1)',
                 color: '#52c41a',
@@ -254,8 +254,8 @@ export default function DashboardDuna() {
               }}>
                 <CheckCircle size={24} />
               </div>
-              <div style={{ 
-                fontSize: '13px', 
+              <div style={{
+                fontSize: '13px',
                 color: 'rgba(0, 0, 0, 0.45)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
@@ -266,8 +266,8 @@ export default function DashboardDuna() {
               <div style={{ fontSize: '36px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 8px 0' }}>
                 {stats.totalTasks}
               </div>
-              <div style={{ 
-                fontSize: '14px', 
+              <div style={{
+                fontSize: '14px',
                 color: 'rgba(0, 0, 0, 0.45)',
                 display: 'flex',
                 alignItems: 'center',
@@ -280,7 +280,7 @@ export default function DashboardDuna() {
           </div>
 
           {/* Stat Card 3 - Epics */}
-          <div style={{ 
+          <div style={{
             background: '#ffffff',
             border: '1px solid rgba(0, 0, 0, 0.06)',
             borderRadius: '12px',
@@ -288,18 +288,18 @@ export default function DashboardDuna() {
             transition: 'all 0.3s ease',
             cursor: 'pointer'
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)'
-            e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)'
-            e.currentTarget.style.boxShadow = 'none'
-          }}>
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
+              <div style={{
+                width: '48px',
+                height: '48px',
                 borderRadius: '12px',
                 background: 'rgba(250, 173, 20, 0.1)',
                 color: '#faad14',
@@ -309,8 +309,8 @@ export default function DashboardDuna() {
               }}>
                 <BarChart3 size={24} />
               </div>
-              <div style={{ 
-                fontSize: '13px', 
+              <div style={{
+                fontSize: '13px',
                 color: 'rgba(0, 0, 0, 0.45)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
@@ -321,8 +321,8 @@ export default function DashboardDuna() {
               <div style={{ fontSize: '36px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 8px 0' }}>
                 {stats.totalEpics}
               </div>
-              <div style={{ 
-                fontSize: '14px', 
+              <div style={{
+                fontSize: '14px',
                 color: 'rgba(0, 0, 0, 0.45)',
                 display: 'flex',
                 alignItems: 'center',
@@ -335,7 +335,7 @@ export default function DashboardDuna() {
           </div>
 
           {/* Stat Card 4 - Progression */}
-          <div style={{ 
+          <div style={{
             background: '#ffffff',
             border: '1px solid rgba(0, 0, 0, 0.06)',
             borderRadius: '12px',
@@ -343,18 +343,18 @@ export default function DashboardDuna() {
             transition: 'all 0.3s ease',
             cursor: 'pointer'
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)'
-            e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)'
-            e.currentTarget.style.boxShadow = 'none'
-          }}>
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.08)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
+              <div style={{
+                width: '48px',
+                height: '48px',
                 borderRadius: '12px',
                 background: 'rgba(22, 119, 255, 0.1)',
                 color: '#1677ff',
@@ -364,8 +364,8 @@ export default function DashboardDuna() {
               }}>
                 <Clock size={24} />
               </div>
-              <div style={{ 
-                fontSize: '13px', 
+              <div style={{
+                fontSize: '13px',
                 color: 'rgba(0, 0, 0, 0.45)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
@@ -376,8 +376,8 @@ export default function DashboardDuna() {
               <div style={{ fontSize: '36px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 8px 0' }}>
                 {completionRate}%
               </div>
-              <div style={{ 
-                fontSize: '14px', 
+              <div style={{
+                fontSize: '14px',
                 color: 'rgba(0, 0, 0, 0.45)',
                 display: 'flex',
                 alignItems: 'center',
@@ -392,7 +392,7 @@ export default function DashboardDuna() {
 
         {/* Progress Section */}
         <div style={{ marginBottom: '48px' }}>
-          <div style={{ 
+          <div style={{
             background: '#ffffff',
             border: '1px solid rgba(0, 0, 0, 0.06)',
             borderRadius: '12px',
@@ -400,17 +400,17 @@ export default function DashboardDuna() {
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
           }}>
             <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ 
-                fontSize: '24px', 
-                fontWeight: 600, 
-                color: '#1a1a1a', 
-                margin: '0 0 8px 0' 
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 600,
+                color: '#1a1a1a',
+                margin: '0 0 8px 0'
               }}>
                 Progression Globale
               </h2>
-              <span style={{ 
-                fontSize: '14px', 
-                color: 'rgba(0, 0, 0, 0.45)' 
+              <span style={{
+                fontSize: '14px',
+                color: 'rgba(0, 0, 0, 0.45)'
               }}>
                 {stats.completedTasks} sur {stats.totalTasks} tâches complétées
               </span>
@@ -425,25 +425,25 @@ export default function DashboardDuna() {
                 size={12}
                 trailColor="#f0f0f0"
               />
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
                 marginTop: '24px',
                 gap: '16px'
               }}>
                 <div style={{ flex: 1, textAlign: 'center' }}>
-                  <span style={{ 
-                    fontSize: '13px', 
+                  <span style={{
+                    fontSize: '13px',
                     color: 'rgba(0, 0, 0, 0.45)',
                     display: 'block',
                     marginBottom: '8px'
                   }}>
                     À faire
                   </span>
-                  <span style={{ 
-                    fontSize: '24px', 
-                    fontWeight: 600, 
-                    color: '#1a1a1a' 
+                  <span style={{
+                    fontSize: '24px',
+                    fontWeight: 600,
+                    color: '#1a1a1a'
                   }}>
                     {stats.totalTasks - stats.completedTasks}
                   </span>
@@ -466,18 +466,18 @@ export default function DashboardDuna() {
                   </span>
                 </div>
                 <div style={{ flex: 1, textAlign: 'center' }}>
-                  <span style={{ 
-                    fontSize: '13px', 
+                  <span style={{
+                    fontSize: '13px',
                     color: 'rgba(0, 0, 0, 0.45)',
                     display: 'block',
                     marginBottom: '8px'
                   }}>
                     Terminées
                   </span>
-                  <span style={{ 
-                    fontSize: '24px', 
-                    fontWeight: 600, 
-                    color: '#52c41a' 
+                  <span style={{
+                    fontSize: '24px',
+                    fontWeight: 600,
+                    color: '#52c41a'
                   }}>
                     {stats.completedTasks}
                   </span>
@@ -489,7 +489,7 @@ export default function DashboardDuna() {
 
         {/* Calendrier */}
         <div>
-          <div style={{ 
+          <div style={{
             background: '#ffffff',
             border: '1px solid rgba(0, 0, 0, 0.06)',
             borderRadius: '4px',
@@ -497,11 +497,11 @@ export default function DashboardDuna() {
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
           }}>
             <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ 
-                fontSize: '20px', 
-                fontWeight: 600, 
-                color: '#000000', 
-                margin: 0 
+              <h2 style={{
+                fontSize: '20px',
+                fontWeight: 600,
+                color: '#000000',
+                margin: 0
               }}>
                 Calendrier
               </h2>
@@ -532,7 +532,7 @@ export default function DashboardDuna() {
 
         {/* Quick Actions */}
         <div>
-          <div style={{ 
+          <div style={{
             background: '#ffffff',
             border: '1px solid rgba(0, 0, 0, 0.06)',
             borderRadius: '12px',
@@ -540,51 +540,51 @@ export default function DashboardDuna() {
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
           }}>
             <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ 
-                fontSize: '24px', 
-                fontWeight: 600, 
-                color: '#1a1a1a', 
-                margin: 0 
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 600,
+                color: '#1a1a1a',
+                margin: 0
               }}>
                 Actions Rapides
               </h2>
             </div>
             <div>
-              <div style={{ 
+              <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 gap: '16px'
               }}>
-                <button 
-                onClick={() => navigate('/projects')}
-                style={{ 
-                  background: '#ffffff',
-                  border: '2px solid rgba(0, 0, 0, 0.06)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  color: '#1a1a1a'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#1890ff'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.15)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.06)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}>
-                  <div style={{ 
-                    width: '48px', 
-                    height: '48px', 
+                <button
+                  onClick={() => navigate('/projects')}
+                  style={{
+                    background: '#ffffff',
+                    border: '2px solid rgba(0, 0, 0, 0.06)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    color: '#1a1a1a'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#1890ff'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.15)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.06)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
                     borderRadius: '12px',
                     background: 'rgba(24, 144, 255, 0.1)',
                     color: '#1890ff',
@@ -596,36 +596,36 @@ export default function DashboardDuna() {
                   </div>
                   <span>Nouveau Projet</span>
                 </button>
-                <button 
-                onClick={() => navigate('/kanban')}
-                style={{ 
-                  background: '#ffffff',
-                  border: '2px solid rgba(0, 0, 0, 0.06)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  color: '#1a1a1a'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#52c41a'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(82, 196, 26, 0.15)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.06)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}>
-                  <div style={{ 
-                    width: '48px', 
-                    height: '48px', 
+                <button
+                  onClick={() => navigate('/kanban')}
+                  style={{
+                    background: '#ffffff',
+                    border: '2px solid rgba(0, 0, 0, 0.06)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    color: '#1a1a1a'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#52c41a'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(82, 196, 26, 0.15)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.06)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
                     borderRadius: '12px',
                     background: 'rgba(82, 196, 26, 0.1)',
                     color: '#52c41a',
@@ -637,36 +637,36 @@ export default function DashboardDuna() {
                   </div>
                   <span>Nouvelle Tâche</span>
                 </button>
-                <button 
-                onClick={() => navigate('/epics')}
-                style={{ 
-                  background: '#ffffff',
-                  border: '2px solid rgba(0, 0, 0, 0.06)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  color: '#1a1a1a'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#faad14'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(250, 173, 20, 0.15)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.06)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}>
-                  <div style={{ 
-                    width: '48px', 
-                    height: '48px', 
+                <button
+                  onClick={() => navigate('/epics')}
+                  style={{
+                    background: '#ffffff',
+                    border: '2px solid rgba(0, 0, 0, 0.06)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    color: '#1a1a1a'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#faad14'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(250, 173, 20, 0.15)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.06)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
                     borderRadius: '12px',
                     background: 'rgba(250, 173, 20, 0.1)',
                     color: '#faad14',
@@ -678,36 +678,36 @@ export default function DashboardDuna() {
                   </div>
                   <span>Nouvelle Epic</span>
                 </button>
-                <button 
-                onClick={() => navigate('/roadmap')}
-                style={{ 
-                  background: '#ffffff',
-                  border: '2px solid rgba(0, 0, 0, 0.06)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  color: '#1a1a1a'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#722ed1'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(114, 46, 209, 0.15)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.06)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}>
-                  <div style={{ 
-                    width: '48px', 
-                    height: '48px', 
+                <button
+                  onClick={() => navigate('/projects')}
+                  style={{
+                    background: '#ffffff',
+                    border: '2px solid rgba(0, 0, 0, 0.06)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                    color: '#1a1a1a'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#722ed1'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(114, 46, 209, 0.15)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.06)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
                     borderRadius: '12px',
                     background: 'rgba(114, 46, 209, 0.1)',
                     color: '#722ed1',
