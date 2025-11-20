@@ -85,7 +85,29 @@ class TaskController extends Controller
             $task->dependencies()->sync($dependencies);
         }
 
-
+        // Envoyer notification si tâche assignée
+        if ($task->assignee_id) {
+            $assignee = User::find($task->assignee_id);
+            if ($assignee) {
+                $assignee->notify(new \App\Notifications\TaskAssignedNotification($task, $request->user()));
+                
+                // Vérifier l'échéance immédiatement
+                if ($task->due_date && $task->status !== 'done') {
+                    $dueDate = \Carbon\Carbon::parse($task->due_date);
+                    $now = \Carbon\Carbon::now();
+                    $daysUntilDue = $now->diffInDays($dueDate, false);
+                    
+                    // Tâche en retard
+                    if ($daysUntilDue < 0) {
+                        $assignee->notify(new \App\Notifications\TaskOverdueNotification($task, abs($daysUntilDue)));
+                    }
+                    // Tâche échéance dans 3 jours ou moins
+                    elseif ($daysUntilDue >= 0 && $daysUntilDue <= 3) {
+                        $assignee->notify(new \App\Notifications\TaskDueSoonNotification($task, (int)$daysUntilDue));
+                    }
+                }
+            }
+        }
 
         return response()->json($task->load('project','sprint','epic','assignee','dependencies'), 201);
     }
@@ -97,7 +119,7 @@ class TaskController extends Controller
     {
         $user = $request->user();
         
-        // Vérifier que l'utilisateur a accès au projet de la tâche
+       
         if (!$task->project->users()->where('users.id', $user->id)->exists()) {
             return response()->json(['message' => 'Accès non autorisé'], 403);
         }
@@ -162,7 +184,32 @@ class TaskController extends Controller
             $task->dependencies()->sync($dependencies);
         }
 
+        // Envoyer notification si assignation a changé
+        if ($newAssigneeId && $newAssigneeId !== $oldAssigneeId) {
+            $assignee = User::find($newAssigneeId);
+            if ($assignee) {
+                $assignee->notify(new \App\Notifications\TaskAssignedNotification($task->fresh(), $request->user()));
+            }
+        }
 
+        // Vérifier l'échéance si due_date a changé ou si assignee_id présent
+        if ($task->assignee_id && $task->due_date && $task->status !== 'done') {
+            $assignee = User::find($task->assignee_id);
+            if ($assignee) {
+                $dueDate = \Carbon\Carbon::parse($task->due_date);
+                $now = \Carbon\Carbon::now();
+                $daysUntilDue = $now->diffInDays($dueDate, false);
+                
+                // Tâche en retard
+                if ($daysUntilDue < 0) {
+                    $assignee->notify(new \App\Notifications\TaskOverdueNotification($task, abs($daysUntilDue)));
+                }
+                // Tâche échéance dans 3 jours ou moins
+                elseif ($daysUntilDue >= 0 && $daysUntilDue <= 3) {
+                    $assignee->notify(new \App\Notifications\TaskDueSoonNotification($task, (int)$daysUntilDue));
+                }
+            }
+        }
 
         return $task->load('project','sprint','epic','assignee','dependencies');
     }
